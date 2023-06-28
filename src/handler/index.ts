@@ -130,6 +130,7 @@ const indexHandler = async (req: Request, res: Response) => {
   }
 
   await db.set(`${docId}:extensions`, extensions);
+  await db.set(`${docId}:indexAt`, new Date());
 
   console.log("Successfully indexed FaissStore");
 
