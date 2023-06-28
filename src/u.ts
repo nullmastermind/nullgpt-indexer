@@ -176,7 +176,7 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
       }
     > = {
       ".js": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".json": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".json": { lang: "js", chunkSize: 128 * 13, chunkOverlap: 128 },
       ".jsx": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".ts": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".tsx": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
