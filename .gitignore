@@ -147,6 +147,7 @@ dist
 
 /docs/**/*
 !/docs/**/.gitkeep
+!docs/sample/**/*
 
 /indexes/**/*
 !/indexes/**/.gitkeep
