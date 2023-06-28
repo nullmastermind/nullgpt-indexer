@@ -15,7 +15,7 @@ const queryHandler = async (req: Request, res: Response) => {
     maxTokens = 3072,
     maxScore = 0.45,
     includeAllIfKLessThanScore = 0.3,
-    scoreChangeThreshold = 0.02,
+    scoreChangeThreshold = 0.03,
   } = req.body;
   const vectorStore = await getVectorStore(docId, apiKey);
   const results = await vectorStore.similaritySearchWithScore(
@@ -41,6 +41,9 @@ const queryHandler = async (req: Request, res: Response) => {
     if (totalTokens.current <= maxTokens) {
       const canAddC1 = r[1] <= includeAllIfKLessThanScore;
       const canAddC2 = r[1] - lastScore.current <= scoreChangeThreshold;
+
+      console.log("r[1] - lastScore.current", r[1] - lastScore.current);
+
       const canAdd = canAddC1 || canAddC2;
 
       if (!canAdd) {
