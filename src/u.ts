@@ -11,6 +11,7 @@ import { createHash } from "crypto";
 import CachedOpenAIEmbeddings from "./utility/CachedOpenAIEmbeddings";
 import ignore, { Ignore } from "ignore";
 import { forEach } from "lodash";
+import { Document } from "langchain/document";
 
 const platformName = platform()
   .toLowerCase()
@@ -127,6 +128,34 @@ export async function getIgnores(
 
   return [keys, mapValue];
 }
+
+export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
+  // filter hash
+  if (
+    !(
+      !doc.pageContent.includes(" ") &&
+      !doc.pageContent.includes("\t") &&
+      !doc.pageContent.includes(";") &&
+      !doc.pageContent.includes("\n")
+    )
+  ) {
+    return false;
+  }
+
+  // filter c# import
+  if ([".cs"].includes(path.extname(doc.metadata.source))) {
+    const lines = doc.pageContent
+      .split("\n")
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .filter((v) => !v.startsWith("using"));
+    if (lines.length === 0) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
   if (!splitter[ext]) {

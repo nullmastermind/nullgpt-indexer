@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import path from "path";
 import {
   createMd5,
+  filterDocIndex,
   getSplitter,
   getVectorStore,
   listFilesRecursively,
@@ -39,12 +40,7 @@ const indexerQueue = new Queue<IndexerQueueInput>(
       const splitter = getSplitter(ext);
       const loader = new TextLoader(f);
       const docs = (await loader.loadAndSplit(splitter)).filter((doc) => {
-        return !(
-          !doc.pageContent.includes(" ") &&
-          !doc.pageContent.includes("\t") &&
-          !doc.pageContent.includes(";") &&
-          !doc.pageContent.includes("\n")
-        );
+        return filterDocIndex(doc);
       });
       const md5 = createMd5(docs.map((v) => v.pageContent).join(""));
       const tempIndexedHash: Record<string, boolean> = {};
@@ -52,11 +48,17 @@ const indexerQueue = new Queue<IndexerQueueInput>(
       await vectorStore.addDocuments(
         docs
           .map((doc) => {
-            doc.metadata.source =
-              "/home/fakeuser/" +
-              (path.relative(docsDir, doc.metadata.source) as string)
-                .split(path.sep)
-                .join("/");
+            const relativePath = (
+              path.relative(docsDir, doc.metadata.source) as string
+            )
+              .split(path.sep)
+              .join("/")
+              .split("../")
+              .join("")
+              .split("./")
+              .join("");
+
+            doc.metadata.source = "/home/fakeuser/" + relativePath;
             doc.metadata["md5"] = md5;
             doc.metadata["hash"] = createMd5(doc.pageContent);
 
