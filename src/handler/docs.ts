@@ -13,9 +13,9 @@ const docsHandler = async (req: Request, res: Response) => {
   }[] = [];
   const indexedDocIds = new Set<string>();
 
-  const handleFile = async (f: string, isIndexed: boolean) => {
+  const handleFile = async (f: string, parent: string, isIndexed: boolean) => {
     if (f === "_db") return;
-    if (await isDirectory(join(indexSaveDir, f))) {
+    if (await isDirectory(join(parent, f))) {
       const extensions = await db.get(`${f}:extensions`);
 
       docs.push({
@@ -34,10 +34,10 @@ const docsHandler = async (req: Request, res: Response) => {
 
   await Promise.all([
     ...indexedDirFiles.map((f) => {
-      return handleFile(f, true);
+      return handleFile(f, indexSaveDir, true);
     }),
     ...docsDirFiles.map((f) => {
-      return handleFile(f, false);
+      return handleFile(f, docsDir, false);
     }),
   ]);
 
