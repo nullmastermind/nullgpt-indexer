@@ -9,6 +9,8 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { FaissStore } from "langchain/vectorstores/faiss";
 import { createHash } from "crypto";
 import CachedOpenAIEmbeddings from "./utility/CachedOpenAIEmbeddings";
+import ignore, { Ignore } from "ignore";
+import { forEach } from "lodash";
 
 const platformName = platform()
   .toLowerCase()
@@ -48,39 +50,62 @@ export async function listFilesRecursively(
   const stream = fg.stream("**", {
     cwd: dir,
     dot: false,
-    ignore: getIgnoredFiles(dir),
     onlyFiles: true,
   });
-
   const handlers = [];
+  const ignores = await getIgnores(dir);
+  const dirIgnoresMap: Record<string, Ignore[]> = {};
 
   for await (const entry of stream) {
     const fullPath = path.join(dir, entry as string);
+    const dirname = path.dirname(fullPath);
+
+    if (!dirIgnoresMap[dirname]) {
+      dirIgnoresMap[dirname] = [];
+      forEach(ignores[0], (k) => {
+        if (dirname.includes(k)) {
+          dirIgnoresMap[dirname].push(ignores[1][k]);
+        }
+      });
+    }
+
+    let ignore = false;
+    for (let i = 0; i < dirIgnoresMap[dirname].length; i++) {
+      const ig = dirIgnoresMap[dirname][i];
+      if (ig.ignores(entry as string)) {
+        ignore = true;
+        break;
+      }
+    }
+
+    if (ignore) continue;
+
     handlers.push(cb(fullPath));
   }
 
   await Promise.all(handlers);
 }
 
-function getIgnoredFiles(dir: string): string[] {
-  const gitignorePath = path.join(dir, ".gitignore");
-  let ignoredFiles: string[] = [];
+export async function getIgnores(
+  dir: string
+): Promise<[string[], Record<string, Ignore>]> {
+  const stream = fg.stream("**/.gitignore", {
+    cwd: dir,
+    dot: false,
+    onlyFiles: true,
+  });
+  const keys = [];
+  const mapValue: Record<string, Ignore> = {};
 
-  if (fs.existsSync(gitignorePath)) {
-    const gitignoreContent = fs.readFileSync(gitignorePath, "utf-8");
-    ignoredFiles = gitignoreContent
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#"));
+  for await (const entry of stream) {
+    const fullPath = path.join(dir, entry as string);
+    const dirname = path.dirname(fullPath);
+    const gitignoreContent = await fs.readFile(fullPath, "utf-8");
+    mapValue[dirname] = ignore().add(gitignoreContent);
+    keys.push(dirname);
   }
 
-  return ignoredFiles.map((v) => {
-    if (!v.startsWith("/")) {
-      v = "**/" + v;
-    }
-
-    return v;
-  });
+  return [keys, mapValue];
 }
 
 export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
