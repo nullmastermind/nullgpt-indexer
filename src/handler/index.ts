@@ -8,7 +8,7 @@ import {
   listFilesRecursively,
 } from "../u";
 import { pathExists, readJson, writeFile } from "fs-extra";
-import { docsDir, indexSaveDir, vectorStores } from "../const";
+import { db, docsDir, indexSaveDir, vectorStores } from "../const";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";
@@ -128,6 +128,8 @@ const indexHandler = async (req: Request, res: Response) => {
     vectorStores[docId] = vectorStore;
     delete vectorStores[tempVectorStoreId];
   }
+
+  await db.set(`${docId}:extensions`, extensions);
 
   console.log("Successfully indexed FaissStore");
 
