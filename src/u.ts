@@ -70,13 +70,12 @@ export async function listFilesRecursively(
     }
 
     let ignore = false;
-    for (let i = 0; i < dirIgnoresMap[dirname].length; i++) {
-      const ig = dirIgnoresMap[dirname][i];
+    forEach(dirIgnoresMap[dirname], (ig) => {
       if (ig.ignores(entry as string)) {
         ignore = true;
-        break;
+        return false;
       }
-    }
+    });
 
     if (ignore) continue;
 
