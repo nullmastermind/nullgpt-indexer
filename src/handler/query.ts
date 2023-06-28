@@ -41,9 +41,6 @@ const queryHandler = async (req: Request, res: Response) => {
     if (totalTokens.current <= maxTokens) {
       const canAddC1 = r[1] <= includeAllIfKLessThanScore;
       const canAddC2 = r[1] - lastScore.current <= scoreChangeThreshold;
-
-      console.log("r[1] - lastScore.current", r[1] - lastScore.current);
-
       const canAdd = canAddC1 || canAddC2;
 
       if (!canAdd) {
