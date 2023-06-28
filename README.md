@@ -1,7 +1,8 @@
 ##### A section of the repository https://github.com/nullmastermind/chatgpt-web is dedicated to providing you with a method to communicate using confidential documentation.
 
-
 ```shell
+# Require node version >= v18.16.1
+
 npm install
 npm run build
 npm run start
