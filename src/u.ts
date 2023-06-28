@@ -146,7 +146,7 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
       ".ts": "js",
       ".tsx": "js",
       ".go": "go",
-      ".cpp": "cpp",
+      ".cpp": "java",
       ".c": "cpp",
       ".h": "cpp",
       ".hpp": "cpp",
