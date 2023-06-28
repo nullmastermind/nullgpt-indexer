@@ -18,20 +18,14 @@ const docsHandler = async (req: Request, res: Response) => {
     if (await isDirectory(join(indexSaveDir, f))) {
       const extensions = await db.get(`${f}:extensions`);
 
-      if (extensions !== undefined) {
-        if (isIndexed) {
-          indexedDocIds.add(f);
-        }
-
-        docs.push({
-          doc_id: f,
-          extensions,
-          indexAt: new Date(
-            (await db.get(`${f}:indexAt`)) || new Date(2023, 5, 29)
-          ),
-          isIndexed,
-        });
-      }
+      docs.push({
+        doc_id: f,
+        extensions: extensions || [],
+        indexAt: new Date(
+          (await db.get(`${f}:indexAt`)) || new Date(2023, 5, 29)
+        ),
+        isIndexed,
+      });
     }
   };
 
