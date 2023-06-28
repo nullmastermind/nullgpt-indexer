@@ -12,10 +12,14 @@ const queryHandler = async (req: Request, res: Response) => {
     k = 4,
     maxTokens = 3072,
     maxScore = 0.45,
+    includeAllIfKLessThanScore = 0.3,
   } = req.body;
   const vectorStore = await getVectorStore(docId, apiKey);
-  const results = await vectorStore.similaritySearchWithScore(query, k);
-  const data: [Document<Record<string, any>>, number][] = [];
+  const results = await vectorStore.similaritySearchWithScore(
+    query,
+    Math.max(k, 13)
+  );
+  const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
 
   forEach(results, (r) => {
@@ -27,6 +31,12 @@ const queryHandler = async (req: Request, res: Response) => {
     totalTokens.current += encoded.length;
 
     if (totalTokens.current <= maxTokens) {
+      if (r[1] > includeAllIfKLessThanScore) {
+        if (data.length >= k) {
+          return false;
+        }
+      }
+
       data.push(r);
     } else {
       totalTokens.current -= encoded.length;
