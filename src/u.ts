@@ -167,28 +167,47 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
     //   'markdown', 'latex',
     //   'html',     'sol'
     // ]
-    const lang: Record<string, any> = {
-      ".js": "js",
-      ".jsx": "js",
-      ".ts": "js",
-      ".tsx": "js",
-      ".go": "go",
-      ".cpp": "cpp",
-      ".c": "cpp",
-      ".h": "cpp",
-      ".hpp": "cpp",
-      ".cs": "java",
-      ".py": "python",
-      ".md": "markdown",
-      ".html": "html",
-      ".java": "java",
+    const lang: Record<
+      string,
+      {
+        lang: any;
+        chunkSize: number;
+        chunkOverlap: number;
+      }
+    > = {
+      ".js": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".jsx": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".ts": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".tsx": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".go": { lang: "go", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".cpp": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".c": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".h": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".hpp": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".cs": { lang: "java", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".py": { lang: "python", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".md": { lang: "markdown", chunkSize: 128 * 13, chunkOverlap: 128 },
+      ".html": { lang: "html", chunkSize: 128 * 13, chunkOverlap: 128 },
+      ".java": { lang: "java", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".rs": { lang: "rust", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".scala": { lang: "scala", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".tex": { lang: "latex", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".rb": { lang: "ruby", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".rst": { lang: "rst", chunkSize: 128 * 13, chunkOverlap: 128 },
+      ".proto": { lang: "proto", chunkSize: 128 * 13, chunkOverlap: 128 },
+      ".php": { lang: "php", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".sol": { lang: "sol", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".swift": { lang: "swift", chunkSize: 128 * 8, chunkOverlap: 128 },
     };
 
     if (lang[ext]) {
-      splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext], {
-        chunkSize: 128 * 8,
-        chunkOverlap: 128,
-      });
+      splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(
+        lang[ext].lang,
+        {
+          chunkSize: lang[ext].chunkSize,
+          chunkOverlap: lang[ext].chunkOverlap,
+        }
+      );
     } else {
       splitter[ext] = new RecursiveCharacterTextSplitter({
         chunkSize: 128 * 13,
