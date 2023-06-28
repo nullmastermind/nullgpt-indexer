@@ -132,12 +132,10 @@ export async function getIgnores(
 export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   // filter hash
   if (
-    !(
-      !doc.pageContent.includes(" ") &&
-      !doc.pageContent.includes("\t") &&
-      !doc.pageContent.includes(";") &&
-      !doc.pageContent.includes("\n")
-    )
+    !doc.pageContent.includes(" ") &&
+    !doc.pageContent.includes("\t") &&
+    !doc.pageContent.includes(";") &&
+    !doc.pageContent.includes("\n")
   ) {
     return false;
   }
