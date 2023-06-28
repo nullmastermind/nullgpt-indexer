@@ -60,6 +60,23 @@ export async function listFilesRecursively(
     const fullPath = path.join(dir, entry as string);
     const dirname = path.dirname(fullPath);
 
+    if (path.extname(fullPath) === ".alias") {
+      const aliasEntries = (await fs.readFile(fullPath, "utf8"))
+        .split("\n")
+        .map((v) => v.trim())
+        .filter((v) => v.length);
+      for (let i = 0; i < aliasEntries.length; i++) {
+        const aliasEntry = aliasEntries[i];
+        if (await pathExists(aliasEntry)) {
+          if (await isDirectory(aliasEntry)) {
+            await listFilesRecursively(aliasEntry, cb);
+          } else {
+            handlers.push(cb(aliasEntry));
+          }
+        }
+      }
+    }
+
     if (!dirIgnoresMap[dirname]) {
       dirIgnoresMap[dirname] = [];
       forEach(ignores[0], (k) => {
