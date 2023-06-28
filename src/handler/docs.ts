@@ -18,6 +18,10 @@ const docsHandler = async (req: Request, res: Response) => {
     if (await isDirectory(join(parent, f))) {
       const extensions = await db.get(`${f}:extensions`);
 
+      if (isIndexed) {
+        indexedDocIds.add(f);
+      }
+
       docs.push({
         doc_id: f,
         extensions: extensions || [],
