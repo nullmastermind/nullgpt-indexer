@@ -46,13 +46,17 @@ export function openExplorerIn(
 
 export async function listFilesRecursively(
   dir: string,
+  fileExtensions: string[],
   cb: (f: string) => Promise<any>
 ): Promise<void> {
-  const stream = fg.stream("**", {
-    cwd: dir,
-    dot: false,
-    onlyFiles: true,
-  });
+  const stream = fg.stream(
+    [...fileExtensions, ".alias"].map((ext) => `**/*${ext}`),
+    {
+      cwd: dir,
+      dot: false,
+      onlyFiles: true,
+    }
+  );
   const handlers = [];
   const ignores = await getIgnores(dir);
   const dirIgnoresMap: Record<string, Ignore[]> = {};
@@ -70,12 +74,13 @@ export async function listFilesRecursively(
         const aliasEntry = aliasEntries[i];
         if (await pathExists(aliasEntry)) {
           if (await isDirectory(aliasEntry)) {
-            await listFilesRecursively(aliasEntry, cb);
+            await listFilesRecursively(aliasEntry, fileExtensions, cb);
           } else {
             handlers.push(cb(aliasEntry));
           }
         }
       }
+      continue;
     }
 
     if (!dirIgnoresMap[dirname]) {

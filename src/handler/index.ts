@@ -7,7 +7,7 @@ import {
   getVectorStore,
   listFilesRecursively,
 } from "../u";
-import { pathExists, readJson, remove, writeFile } from "fs-extra";
+import { pathExists, readJson, writeFile } from "fs-extra";
 import { docsDir, indexSaveDir, vectorStores } from "../const";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
@@ -16,7 +16,6 @@ import { forEach, uniqueId } from "lodash";
 
 type IndexerQueueInput = {
   f: string;
-  indexFileExtensions: Set<string>;
   vectorStore: FaissStore;
   indexedHash: Record<string, boolean>;
   newIndexedHash: Record<string, boolean>;
@@ -24,19 +23,11 @@ type IndexerQueueInput = {
 
 const indexerQueue = new Queue<IndexerQueueInput>(
   async (
-    {
-      f,
-      indexFileExtensions,
-      vectorStore,
-      indexedHash,
-      newIndexedHash,
-    }: IndexerQueueInput,
+    { f, vectorStore, indexedHash, newIndexedHash }: IndexerQueueInput,
     cb
   ) => {
-    const ext = path.extname(f);
-    if (!indexFileExtensions.has(ext)) return cb(null);
-
     try {
+      const ext = path.extname(f);
       const splitter = getSplitter(ext);
       const loader = new TextLoader(f);
       const docs = (await loader.loadAndSplit(splitter)).filter((doc) => {
@@ -97,7 +88,6 @@ const indexHandler = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "The path does not exist." });
   }
 
-  const indexFileExtensions: Set<string> = new Set(extensions);
   const saveTo = path.join(indexSaveDir, docId);
   const indexedHashFile = path.join(saveTo, "indexedHash.json");
   const tempVectorStoreId = uniqueId("VectorStore");
@@ -109,16 +99,12 @@ const indexHandler = async (req: Request, res: Response) => {
   }
   const newIndexedHash: Record<string, boolean> = {};
 
-  await listFilesRecursively(indexDir, async (f) => {
-    const ext = path.extname(f);
-    if (!indexFileExtensions.has(ext)) return;
-
+  await listFilesRecursively(indexDir, extensions, async (f) => {
     const exec = () => {
       return new Promise((rel) => {
         indexerQueue
           .push({
             f,
-            indexFileExtensions,
             vectorStore,
             indexedHash,
             newIndexedHash,
