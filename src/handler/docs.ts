@@ -31,6 +31,10 @@ const docsHandler = async (req: Request, res: Response) => {
     })
   );
 
+  docs.sort((a, b) => {
+    return b.indexAt.getTime() - a.indexAt.getTime();
+  });
+
   res.status(200).json({
     data: docs,
   });
