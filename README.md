@@ -17,7 +17,7 @@ Don't forget to create a `.env` file with example content from the `.env.example
 - `doc_id` is the same as the folder name inside `docs`
 - You have the option to create an alias file to index other directories that exist on your disk.
 
-For example, create a file called `1.alias` with the following content:
+For example, create a file called `docs/sample_docs/1.alias` with the following content:
 
 ```
 D:\documents\sample_documents1
