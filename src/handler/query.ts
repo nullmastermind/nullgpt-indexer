@@ -25,6 +25,7 @@ const queryHandler = async (req: Request, res: Response) => {
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
   const lastScore = { current: -1 };
+  const includedSources = new Set<string>();
 
   forEach(results, (r) => {
     if (r[1] > maxScore) return false;
@@ -41,7 +42,8 @@ const queryHandler = async (req: Request, res: Response) => {
     if (totalTokens.current <= maxTokens) {
       const canAddC1 = r[1] <= includeAllIfKLessThanScore;
       const canAddC2 = r[1] - lastScore.current <= scoreChangeThreshold;
-      const canAdd = canAddC1 || canAddC2;
+      const canAddC3 = includedSources.has(r[0].metadata.source);
+      const canAdd = canAddC1 || canAddC2 || canAddC3;
 
       if (!canAdd) {
         if (data.length >= k) {
@@ -49,11 +51,19 @@ const queryHandler = async (req: Request, res: Response) => {
         }
       }
 
+      includedSources.add(r[0].metadata.source);
       data.push(r);
     } else {
       totalTokens.current -= encoded.length;
       return false;
     }
+  });
+
+  data.sort((a, b) => {
+    const s1 = `${a[0].metadata.source}:${a[0].metadata.loc.lines.from}`;
+    const s2 = `${b[0].metadata.source}:${b[0].metadata.loc.lines.from}`;
+
+    return s1.localeCompare(s2);
   });
 
   res.status(200).json({
