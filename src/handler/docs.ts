@@ -46,7 +46,7 @@ const docsHandler = async (req: Request, res: Response) => {
   ]);
 
   docs.sort((a, b) => {
-    return b.indexAt.getTime() - a.indexAt.getTime();
+    return a.doc_id.localeCompare(b.doc_id);
   });
 
   res.status(200).json({
