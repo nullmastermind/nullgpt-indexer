@@ -11,6 +11,7 @@ const docsHandler = async (req: Request, res: Response) => {
     indexAt: Date;
     isIndexed: boolean;
   }[] = [];
+  const indexedDocIds = new Set<string>();
 
   const handleFile = async (f: string, isIndexed: boolean) => {
     if (f === "_db") return;
@@ -18,13 +19,17 @@ const docsHandler = async (req: Request, res: Response) => {
       const extensions = await db.get(`${f}:extensions`);
 
       if (extensions !== undefined) {
+        if (isIndexed) {
+          indexedDocIds.add(f);
+        }
+
         docs.push({
           doc_id: f,
           extensions,
           indexAt: new Date(
             (await db.get(`${f}:indexAt`)) || new Date(2023, 5, 29)
           ),
-          isIndexed: true,
+          isIndexed,
         });
       }
     }
@@ -47,7 +52,12 @@ const docsHandler = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
-    data: docs,
+    data: docs.filter((doc) => {
+      if (!doc.isIndexed) {
+        return !indexedDocIds.has(doc.doc_id);
+      }
+      return true;
+    }),
   });
 };
 
