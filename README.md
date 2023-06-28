@@ -4,6 +4,7 @@
 # Require node version >= v18.16.1
 
 corepack enable
+yarn install
 yarn build
 yarn start
 ```
