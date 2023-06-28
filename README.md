@@ -1,3 +1,5 @@
+[![Unlock the Power of ChatGPT: A Step-by-Step Guide to Using it with Private Documents](https://img.youtube.com/vi/Oo7zh4YWLc8/0.jpg)](https://youtu.be/Oo7zh4YWLc8)
+
 ##### A section of the repository https://github.com/nullmastermind/chatgpt-web is dedicated to providing you with a method to communicate using confidential documentation.
 
 ```shell
