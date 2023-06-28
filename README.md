@@ -3,9 +3,9 @@
 ```shell
 # Require node version >= v18.16.1
 
-npm install
-npm run build
-npm run start
+corepack enable
+yarn build
+yarn start
 ```
 
 To create an index, create a folder inside the `docs` folder and call the API. Please import `nullgpt_indexer.json` to https://hoppscotch.io/ to see some API examples. Just run and go to https://gpt.dongnv.dev to chat with your private documentation.
