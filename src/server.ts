@@ -5,12 +5,11 @@ import cors from "cors";
 import indexHandler from "./handler";
 import queryHandler from "./handler/query";
 import docsHandler from "./handler/docs";
-import { embeddingsType } from "./const";
 
-if (embeddingsType === "tensorflow") {
-  require("@tensorflow/tfjs-core"); /* or @tensorflow/tfjs-node */
-  require("@tensorflow/tfjs-backend-cpu");
-}
+// if (embeddingsType === "tensorflow") {
+//   require("@tensorflow/tfjs-core"); /* or @tensorflow/tfjs-node */
+//   require("@tensorflow/tfjs-backend-cpu");
+// }
 
 const app = express();
 const port = 3456;

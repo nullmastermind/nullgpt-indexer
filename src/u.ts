@@ -4,11 +4,10 @@ import path from "path";
 import * as fs from "fs-extra";
 import { pathExists } from "fs-extra";
 import fg from "fast-glob";
-import { embeddingsType, indexSaveDir, splitter, vectorStores } from "./const";
+import { indexSaveDir, splitter, vectorStores } from "./const";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { FaissStore } from "langchain/vectorstores/faiss";
 import { createHash } from "crypto";
-import { TensorFlowEmbeddings } from "langchain/embeddings/tensorflow";
 import CachedOpenAIEmbeddings from "./utility/CachedOpenAIEmbeddings";
 
 const platformName = platform()
@@ -136,12 +135,15 @@ export const getVectorStore = async (
 ): Promise<FaissStore> => {
   if (!vectorStores[docId] || forceNew) {
     const saveDir = path.join(indexSaveDir, docId);
-    const embeddings =
-      embeddingsType === "tensorflow"
-        ? new TensorFlowEmbeddings()
-        : new CachedOpenAIEmbeddings({
-            openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
-          });
+    // const embeddings =
+    //   embeddingsType === "tensorflow"
+    //     ? new TensorFlowEmbeddings()
+    //     : new CachedOpenAIEmbeddings({
+    //         openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
+    //       });
+    const embeddings = new CachedOpenAIEmbeddings({
+      openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
+    });
 
     if (await pathExists(path.join(saveDir, "docstore.json"))) {
       vectorStores[docId] = await FaissStore.load(
