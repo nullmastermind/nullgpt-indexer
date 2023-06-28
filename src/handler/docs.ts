@@ -1,35 +1,46 @@
 import { Request, Response } from "express";
 import { readdir } from "fs-extra";
-import { db, indexSaveDir } from "../const";
+import { db, docsDir, indexSaveDir } from "../const";
 import { isDirectory } from "../u";
 import { join } from "path";
 
 const docsHandler = async (req: Request, res: Response) => {
-  const files = await readdir(indexSaveDir);
   const docs: {
     doc_id: string;
     extensions: string[];
     indexAt: Date;
+    isIndexed: boolean;
   }[] = [];
 
-  await Promise.all(
-    files.map(async (f) => {
-      if (f === "_db") return;
-      if (await isDirectory(join(indexSaveDir, f))) {
-        const extensions = await db.get(`${f}:extensions`);
+  const handleFile = async (f: string, isIndexed: boolean) => {
+    if (f === "_db") return;
+    if (await isDirectory(join(indexSaveDir, f))) {
+      const extensions = await db.get(`${f}:extensions`);
 
-        if (extensions !== undefined) {
-          docs.push({
-            doc_id: f,
-            extensions,
-            indexAt: new Date(
-              (await db.get(`${f}:indexAt`)) || new Date(2023, 5, 29)
-            ),
-          });
-        }
+      if (extensions !== undefined) {
+        docs.push({
+          doc_id: f,
+          extensions,
+          indexAt: new Date(
+            (await db.get(`${f}:indexAt`)) || new Date(2023, 5, 29)
+          ),
+          isIndexed: true,
+        });
       }
-    })
-  );
+    }
+  };
+
+  const indexedDirFiles = await readdir(indexSaveDir);
+  const docsDirFiles = await readdir(docsDir);
+
+  await Promise.all([
+    ...indexedDirFiles.map((f) => {
+      return handleFile(f, true);
+    }),
+    ...docsDirFiles.map((f) => {
+      return handleFile(f, false);
+    }),
+  ]);
 
   docs.sort((a, b) => {
     return b.indexAt.getTime() - a.indexAt.getTime();
