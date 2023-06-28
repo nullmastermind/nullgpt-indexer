@@ -60,12 +60,15 @@ const queryHandler = async (req: Request, res: Response) => {
   });
 
   data.sort((a, b) => {
-    const s1 = `${a[0].metadata.source}:${
-      a[0]?.metadata?.loc?.lines?.from || 0
-    }`;
-    const s2 = `${b[0].metadata.source}:${
-      b[0]?.metadata?.loc?.lines?.from || 0
-    }`;
+    const s1 = `${a[0].metadata.source}`;
+    const s2 = `${b[0].metadata.source}`;
+
+    if (s1 === s2) {
+      const from1 = a[0]?.metadata?.loc?.lines?.from || 0;
+      const from2 = b[0]?.metadata?.loc?.lines?.from || 0;
+
+      return from1 - from2;
+    }
 
     return s1.localeCompare(s2);
   });
