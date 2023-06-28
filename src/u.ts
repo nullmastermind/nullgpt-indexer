@@ -105,6 +105,10 @@ export async function getIgnores(
     keys.push(dirname);
   }
 
+  keys.sort((a, b) => {
+    return a.length - b.length;
+  });
+
   return [keys, mapValue];
 }
 
