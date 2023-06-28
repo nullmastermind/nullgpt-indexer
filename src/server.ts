@@ -5,6 +5,7 @@ import cors from "cors";
 import indexHandler from "./handler";
 import queryHandler from "./handler/query";
 import docsHandler from "./handler/docs";
+import removeIndexHandler from "./handler/remove-index";
 
 // if (embeddingsType === "tensorflow") {
 //   require("@tensorflow/tfjs-core"); /* or @tensorflow/tfjs-node */
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use(cors()); // Add this line to enable CORS for all routes
 
 app.post("/api/index", indexHandler);
+app.post("/api/remove-index", removeIndexHandler);
 app.post("/api/query", queryHandler);
 app.get("/api/docs", docsHandler);
 
