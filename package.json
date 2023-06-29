@@ -6,7 +6,8 @@
   "scripts": {
     "start:dev": "npx ts-node ./src/server.ts",
     "build": "rimraf ./build && tsc",
-    "start": "node ./build/server.js"
+    "start": "node ./build/server.js",
+    "package": "yarn build && node build.js"
   },
   "devDependencies": {
     "@types/better-queue": "^3.8.3",
@@ -16,6 +17,7 @@
     "@types/level": "^6.0.1",
     "@types/lodash": "^4.14.195",
     "@types/node": "^20.3.1",
+    "nexe": "^4.0.0-rc.2",
     "prettier": "^2.8.8",
     "rimraf": "^5.0.1",
     "typescript": "^5.1.5"

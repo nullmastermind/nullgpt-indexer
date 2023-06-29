@@ -156,3 +156,4 @@ dist
 build
 
 temp.*
+/prebuilds.json
