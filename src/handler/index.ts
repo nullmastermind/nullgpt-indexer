@@ -39,6 +39,7 @@ const indexerQueue = new Queue<IndexerQueueInput>(
       });
       const md5 = createMd5(docs.map((v) => v.pageContent).join(""));
       const tempIndexedHash: Record<string, boolean> = {};
+      const isNewIndex = !indexedHash[md5];
 
       await vectorStore.addDocuments(
         docs
@@ -82,7 +83,7 @@ const indexerQueue = new Queue<IndexerQueueInput>(
         newIndexedHash[key] = true;
       });
 
-      cb(null);
+      cb(null, isNewIndex);
     } catch (e) {
       cb(e);
     }
@@ -132,10 +133,10 @@ const indexHandler = async (req: Request, res: Response) => {
       });
     };
 
-    await exec();
+    if (await exec()) {
+      console.log("indexed:", f);
+    }
     indexed.current += 1;
-
-    console.log("indexed:", f);
   });
 
   console.log("Cleaning...");
