@@ -13,7 +13,7 @@ const queryHandler = async (req: Request, res: Response) => {
     query,
     k = 4,
     maxTokens = 3072,
-    maxScore = 0.45,
+    maxScore = 0.55,
     includeAllIfKLessThanScore = 0.3,
     scoreChangeThreshold = 0.03,
   } = req.body;
