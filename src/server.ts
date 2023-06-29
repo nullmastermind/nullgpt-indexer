@@ -1,3 +1,5 @@
+import updateDocHandler from "./handler/update-doc";
+
 require("./const");
 
 import express from "express";
@@ -24,6 +26,7 @@ app.post("/api/remove-index", removeIndexHandler);
 app.post("/api/query", queryHandler);
 app.get("/api/docs", docsHandler);
 app.get("/api/manager", managerHandler);
+app.post("/api/update-doc", updateDocHandler);
 
 app.listen(port, () => {
   console.log(`The nullgpt-indexer service is now available.`);
