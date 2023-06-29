@@ -13,6 +13,7 @@ import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";
 import { forEach, uniqueId } from "lodash";
+import CachedOpenAIEmbeddings from "../utility/CachedOpenAIEmbeddings";
 
 type IndexerQueueInput = {
   f: string;
@@ -124,6 +125,9 @@ const indexHandler = async (req: Request, res: Response) => {
   if (indexed.current > 0) {
     await vectorStore.save(saveTo);
     await writeFile(indexedHashFile, JSON.stringify(indexedHash));
+    await (
+      vectorStore.embeddings as CachedOpenAIEmbeddings
+    ).ensureAllDataSaved();
 
     vectorStores[docId] = vectorStore;
     delete vectorStores[tempVectorStoreId];
