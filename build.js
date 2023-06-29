@@ -25,6 +25,7 @@ async function main() {
     ],
     vcBuild: ["nosign", "release", "openssl-no-asm"],
     build: true,
+    ico: "bot.ico",
   });
 }
 
