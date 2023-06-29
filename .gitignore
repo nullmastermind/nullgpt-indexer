@@ -157,3 +157,4 @@ build
 
 temp.*
 /prebuilds.json
+nullgpt-indexer.exe
