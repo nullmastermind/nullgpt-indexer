@@ -7,7 +7,7 @@
     "start:dev": "npx ts-node ./src/server.ts",
     "build": "rimraf ./build && tsc",
     "start": "node ./build/server.js",
-    "package": "yarn build && node build.js"
+    "package": "yarn build && rimraf ./dist && node build.js"
   },
   "devDependencies": {
     "@types/better-queue": "^3.8.3",
