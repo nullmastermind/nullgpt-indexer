@@ -16,6 +16,19 @@ const managerHandler = async (req: Request, res: Response) => {
     editable: boolean;
   }[] = [];
 
+  await Promise.all(
+    (
+      await readdir(docDir)
+    ).map(async (f) => {
+      if (f.endsWith(".alias")) return;
+
+      docs.push({
+        f: path.join(docDir, f),
+        editable: false,
+      });
+    })
+  );
+
   const aliasFile = path.join(docDir, "1.alias");
 
   if (await pathExists(path.join(docDir, "1.alias"))) {
@@ -30,19 +43,6 @@ const managerHandler = async (req: Request, res: Response) => {
         });
       });
   }
-
-  await Promise.all(
-    (
-      await readdir(docDir)
-    ).map(async (f) => {
-      if (f.endsWith(".alias")) return;
-
-      docs.push({
-        f,
-        editable: false,
-      });
-    })
-  );
 
   res.status(200).json({
     data: docs,
