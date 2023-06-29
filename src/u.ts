@@ -227,6 +227,7 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
 
 export const getVectorStore = async (
   docId: string,
+  embeddingsDocId: string,
   apiKey?: string,
   forceNew?: boolean
 ): Promise<FaissStore> => {
@@ -238,7 +239,7 @@ export const getVectorStore = async (
     //     : new CachedOpenAIEmbeddings({
     //         openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
     //       });
-    const embeddings = new CachedOpenAIEmbeddings(docId, {
+    const embeddings = new CachedOpenAIEmbeddings(embeddingsDocId, {
       openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
     });
 
@@ -270,4 +271,11 @@ export async function isDirectory(path: string): Promise<boolean> {
 
 export function createMd5(content: string): string {
   return createHash("md5").update(content).digest("hex");
+}
+
+export function isMD5(str: string) {
+  // Regular expression pattern for MD5 hash
+  const md5Pattern = /^[a-f0-9]{32}$/;
+
+  return md5Pattern.test(str);
 }

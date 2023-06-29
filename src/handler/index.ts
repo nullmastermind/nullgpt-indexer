@@ -5,6 +5,7 @@ import {
   filterDocIndex,
   getSplitter,
   getVectorStore,
+  isMD5,
   listFilesRecursively,
 } from "../u";
 import { pathExists, readJson, writeFile } from "fs-extra";
@@ -12,8 +13,10 @@ import { db, docsDir, indexSaveDir, vectorStores } from "../const";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";
-import { forEach, uniqueId } from "lodash";
+import { forEach, last, uniqueId } from "lodash";
 import CachedOpenAIEmbeddings from "../utility/CachedOpenAIEmbeddings";
+
+const cacheTTLMillis = 7 * 24 * 60 * 60 * 1000;
 
 type IndexerQueueInput = {
   f: string;
@@ -92,7 +95,12 @@ const indexHandler = async (req: Request, res: Response) => {
   const saveTo = path.join(indexSaveDir, docId);
   const indexedHashFile = path.join(saveTo, "indexedHash.json");
   const tempVectorStoreId = uniqueId("VectorStore");
-  const vectorStore = await getVectorStore(tempVectorStoreId, apiKey, true);
+  const vectorStore = await getVectorStore(
+    tempVectorStoreId,
+    docId,
+    apiKey,
+    true
+  );
   const indexed = { current: 0 };
   let indexedHash: Record<string, boolean> = {};
   if (await pathExists(indexedHashFile)) {
@@ -135,6 +143,29 @@ const indexHandler = async (req: Request, res: Response) => {
 
   await db.set(`${docId}:extensions`, extensions);
   await db.set(`${docId}:indexAt`, new Date());
+
+  // remove unused keys
+  db.eachKey(async (key) => {
+    if (isMD5(key)) {
+      const updatedAt = await db.get(`${key}:updatedAt`);
+      if (updatedAt === undefined) {
+        db.del(key).finally();
+        console.log("removed:", key);
+      } else {
+        const keyDocId = await db.get(`${key}:doc_id`);
+        if (keyDocId === docId) {
+          const lastUpdateAt = new Date(updatedAt);
+          const diff = Date.now() - lastUpdateAt.getTime();
+          if (diff > cacheTTLMillis) {
+            db.del(key).finally();
+            db.del(`${key}:doc_id`).finally();
+            db.del(`${key}:updatedAt`).finally();
+            console.log("removed:", key);
+          }
+        }
+      }
+    }
+  }).finally();
 
   console.log("Successfully indexed FaissStore");
 

@@ -17,7 +17,7 @@ const queryHandler = async (req: Request, res: Response) => {
     includeAllIfKLessThanScore = 0.3,
     scoreChangeThreshold = 0.03,
   } = req.body;
-  const vectorStore = await getVectorStore(docId, apiKey);
+  const vectorStore = await getVectorStore(docId, docId, apiKey);
   const results = await vectorStore.similaritySearchWithScore(
     query,
     Math.max(k, DEFAULT_MAX_K)
