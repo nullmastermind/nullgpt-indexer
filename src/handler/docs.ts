@@ -48,14 +48,15 @@ const docsHandler = async (req: Request, res: Response) => {
   docs.sort((a, b) => {
     return a.doc_id.localeCompare(b.doc_id);
   });
+  const results = docs.filter((doc) => {
+    if (!doc.isIndexed) {
+      return !indexedDocIds.has(doc.doc_id);
+    }
+    return true;
+  });
 
   res.status(200).json({
-    data: docs.filter((doc) => {
-      if (!doc.isIndexed) {
-        return !indexedDocIds.has(doc.doc_id);
-      }
-      return true;
-    }),
+    data: results,
   });
 };
 
