@@ -6,6 +6,7 @@ import indexHandler from "./handler";
 import queryHandler from "./handler/query";
 import docsHandler from "./handler/docs";
 import removeIndexHandler from "./handler/remove-index";
+import managerHandler from "./handler/manager";
 
 // if (embeddingsType === "tensorflow") {
 //   require("@tensorflow/tfjs-core"); /* or @tensorflow/tfjs-node */
@@ -22,6 +23,7 @@ app.post("/api/index", indexHandler);
 app.post("/api/remove-index", removeIndexHandler);
 app.post("/api/query", queryHandler);
 app.get("/api/docs", docsHandler);
+app.get("/api/manager", managerHandler);
 
 app.listen(port, () => {
   console.log(`The nullgpt-indexer service is now available.`);
