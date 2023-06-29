@@ -52,8 +52,18 @@ const indexerQueue = new Queue<IndexerQueueInput>(
               .join("")
               .split("./")
               .join("");
+            const tempDocName = relativePath.split("/");
+            const docName = [
+              "/",
+              tempDocName
+                .filter((v, i) => tempDocName.length - i <= 3)
+                .filter((v) => ![".", ".."].includes(v))
+                .join("/"),
+            ].join("");
 
-            doc.metadata.source = "/home/fakeuser/" + relativePath;
+            doc.pageContent = `DOCUMENT NAME: \n\n${doc.pageContent}`;
+
+            doc.metadata.source = "/home/fakeuser" + docName;
             doc.metadata["md5"] = md5;
             doc.metadata["hash"] = createMd5(doc.pageContent);
 
