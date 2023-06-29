@@ -238,7 +238,7 @@ export const getVectorStore = async (
     //     : new CachedOpenAIEmbeddings({
     //         openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
     //       });
-    const embeddings = new CachedOpenAIEmbeddings({
+    const embeddings = new CachedOpenAIEmbeddings(docId, {
       openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
     });
 

@@ -5,7 +5,11 @@ import { createMd5 } from "../u";
 import { db } from "../const";
 
 class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
+  private readonly waitingProcesses: any[];
+  private readonly docId: string;
+
   constructor(
+    docId: string,
     fields?: Partial<OpenAIEmbeddingsParams> &
       Partial<any> & {
         verbose?: boolean;
@@ -14,11 +18,16 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
     configuration?: ConfigurationParameters
   ) {
     super(fields, configuration);
+    this.waitingProcesses = [];
+    this.docId = docId;
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
     const key = createMd5(texts.join(""));
     const dbVal = await db.get(key);
+
+    this.waitingProcesses.push(db.set(`${key}:updatedAt`, new Date()));
+    this.waitingProcesses.push(db.set(`${key}:doc_id`, this.docId));
 
     if (dbVal !== undefined) {
       return dbVal;
@@ -29,6 +38,10 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
     await db.set(key, result);
 
     return result;
+  }
+
+  async ensureAllDataSaved() {
+    await Promise.all(this.waitingProcesses);
   }
 }
 
