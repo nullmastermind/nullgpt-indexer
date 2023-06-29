@@ -24,5 +24,8 @@ app.post("/api/query", queryHandler);
 app.get("/api/docs", docsHandler);
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log("");
+  console.log(
+    `The nullgpt-indexer service is now available. Please visit https://gpt.dongnv.dev to engage in a conversation with your documents.`
+  );
 });
