@@ -16,6 +16,7 @@ const queryHandler = async (req: Request, res: Response) => {
     maxScore = 0.55,
     includeAllIfKLessThanScore = 0.3,
     scoreChangeThreshold = 0.03,
+    ignoreHashes = [],
   } = req.body;
   const vectorStore = await getVectorStore(docId, docId, apiKey);
   const results = await vectorStore.similaritySearchWithScore(
@@ -26,12 +27,17 @@ const queryHandler = async (req: Request, res: Response) => {
   const totalTokens = { current: 0 };
   const lastScore = { current: -1 };
   const includedSources = new Set<string>();
+  const ignoredHashesSet = new Set<string>(ignoreHashes);
 
   forEach(results, (r) => {
     if (r[1] > maxScore) return false;
 
     if (lastScore.current === -1) {
       lastScore.current = r[1];
+    }
+
+    if (ignoredHashesSet.has(r[0].metadata.hash)) {
+      return;
     }
 
     const doc = r[0];
