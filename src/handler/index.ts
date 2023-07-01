@@ -13,7 +13,7 @@ import { db, docsDir, indexSaveDir, vectorStores } from "../const";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";
-import { forEach, last, uniqueId } from "lodash";
+import { forEach, last, throttle, uniqueId } from "lodash";
 import CachedOpenAIEmbeddings from "../utility/CachedOpenAIEmbeddings";
 
 const cacheTTLMillis = 7 * 24 * 60 * 60 * 1000;
@@ -95,13 +95,21 @@ const indexerQueue = new Queue<IndexerQueueInput>(
   }
 );
 
+const clearConsole = throttle(() => {
+  console.clear();
+}, 10000);
+
 const indexHandler = async (req: Request, res: Response) => {
   const { doc_id: docId, extensions, api_key: apiKey } = req.body;
   const indexDir = path.join(docsDir, docId);
 
   if (!(await pathExists(indexDir))) {
+    console.log("The path does not exist.", docId);
     return res.status(400).json({ error: "The path does not exist." });
   }
+
+  clearConsole();
+  console.log(`Start training ${docId}...`);
 
   const saveTo = path.join(indexSaveDir, docId);
   const indexedHashFile = path.join(saveTo, "indexedHash.json");

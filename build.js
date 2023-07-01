@@ -1,8 +1,8 @@
 const { compile } = require("nexe");
-const path = require("path");
 const fg = require("fast-glob");
 const { forEach } = require("lodash");
 const fs = require("fs");
+const os = require("os");
 
 const prebuilds = ["node_modules/classic-level/prebuilds/**"];
 const prebuildFiles = fg.sync(prebuilds);
@@ -15,9 +15,14 @@ forEach(prebuildFiles, (f) => {
 fs.writeFileSync("prebuilds.json", JSON.stringify(prebuildsJson));
 
 async function main() {
+  const platform = os.platform();
+  const arch = os.arch();
+
+  const outputName = `dist/nullgpt-indexer-${platform}-${arch}`;
+
   await compile({
     input: "build/_exec.js",
-    output: "dist/nullgpt-indexer",
+    output: outputName,
     resources: [
       // "node_modules/classic-level/prebuilds/**",
       "node_modules/gpt-3-encoder/**",
