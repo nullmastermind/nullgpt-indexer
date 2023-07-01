@@ -197,7 +197,7 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
       ".java": { lang: "java", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".rs": { lang: "rust", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".scala": { lang: "scala", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".tex": { lang: "latex", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".tex": { lang: "latex", chunkSize: 128 * 13, chunkOverlap: 128 },
       ".rb": { lang: "ruby", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".rst": { lang: "rst", chunkSize: 128 * 13, chunkOverlap: 128 },
       ".proto": { lang: "proto", chunkSize: 128 * 13, chunkOverlap: 128 },
