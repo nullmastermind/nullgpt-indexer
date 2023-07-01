@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Build Electron app
+      - name: Build App
         run: yarn run package
 
       - name: Create release
