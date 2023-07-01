@@ -24,8 +24,8 @@ async function main() {
       "prebuilds.json",
     ],
     vcBuild: ["nosign", "release", "openssl-no-asm"],
-    // build: true,
-    // ico: "bot.ico",
+    build: true,
+    ico: "bot.ico",
   });
 }
 
