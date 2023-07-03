@@ -204,6 +204,7 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
       ".php": { lang: "php", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".sol": { lang: "sol", chunkSize: 128 * 8, chunkOverlap: 128 },
       ".swift": { lang: "swift", chunkSize: 128 * 8, chunkOverlap: 128 },
+      ".ipynb": { lang: "json", chunkSize: 128 * 13, chunkOverlap: 128 },
     };
 
     if (lang[ext]) {
