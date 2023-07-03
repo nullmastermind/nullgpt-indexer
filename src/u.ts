@@ -280,3 +280,17 @@ export function isMD5(str: string) {
 
   return md5Pattern.test(str);
 }
+
+import { exec } from "child_process";
+
+export function gitPull(cwd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    exec("git pull", { cwd }, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve([stdout, stderr].join("\n\n"));
+      }
+    });
+  });
+}

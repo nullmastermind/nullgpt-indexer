@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
-import { pathExists, readdir, readFile } from "fs-extra";
+import { pathExists, pathExistsSync, readdir, readFile } from "fs-extra";
 import path from "path";
 import { docsDir } from "../const";
+import { map } from "lodash";
+import { isDirectory } from "../u";
 
 const managerHandler = async (req: Request, res: Response) => {
   const { doc_id: docId } = req.query as Record<any, string>;
@@ -14,6 +16,8 @@ const managerHandler = async (req: Request, res: Response) => {
   const docs: {
     f: string;
     editable: boolean;
+    git?: string;
+    exists: boolean;
   }[] = [];
 
   await Promise.all(
@@ -22,9 +26,12 @@ const managerHandler = async (req: Request, res: Response) => {
     ).map(async (f) => {
       if (f.endsWith(".alias")) return;
 
+      const fullPath = path.join(docDir, f);
+
       docs.push({
-        f: path.join(docDir, f),
+        f: fullPath,
         editable: false,
+        exists: await pathExists(fullPath),
       });
     })
   );
@@ -40,12 +47,38 @@ const managerHandler = async (req: Request, res: Response) => {
         docs.push({
           f,
           editable: true,
+          exists: pathExistsSync(f),
         });
       });
   }
 
+  const findGit = async (findPath: string): Promise<string | undefined> => {
+    findPath = findPath.split(path.sep).join("/");
+    if (!(await pathExists(findPath))) {
+      return undefined;
+    }
+    const currentDir = (await isDirectory(findPath))
+      ? findPath
+      : path.dirname(findPath);
+    let temp = currentDir.split("/");
+    while (temp.length > 0) {
+      if (await pathExists(path.join(temp.join("/"), ".git"))) {
+        return temp.join(path.sep);
+      }
+      temp.pop();
+    }
+    return undefined;
+  };
+
+  const docsWithGit = await Promise.all(
+    map(docs, async (doc) => {
+      doc.git = await findGit(doc.f);
+      return doc;
+    })
+  );
+
   res.status(200).json({
-    data: docs,
+    data: docsWithGit,
   });
 };
 
