@@ -174,12 +174,12 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
     // ]
     const defaultChunkConfig = {
       code: {
-        chunkSize: 128 * 13,
+        chunkSize: 128 * 10,
         chunkOverlap: 128 * 2,
       },
       text: {
-        chunkSize: 128 * 21,
-        chunkOverlap: 128 * 3,
+        chunkSize: 128 * 20,
+        chunkOverlap: 128 * 4,
       },
     };
     const lang: Record<
