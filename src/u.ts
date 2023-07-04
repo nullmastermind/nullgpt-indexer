@@ -172,6 +172,16 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
     //   'markdown', 'latex',
     //   'html',     'sol'
     // ]
+    const defaultChunkConfig = {
+      code: {
+        chunkSize: 128 * 13,
+        chunkOverlap: 128 * 2,
+      },
+      text: {
+        chunkSize: 128 * 21,
+        chunkOverlap: 128 * 3,
+      },
+    };
     const lang: Record<
       string,
       {
@@ -180,31 +190,31 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
         chunkOverlap: number;
       }
     > = {
-      ".js": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".json": { lang: "js", chunkSize: 128 * 13, chunkOverlap: 128 },
-      ".jsx": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".ts": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".tsx": { lang: "js", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".go": { lang: "go", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".cpp": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".c": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".h": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".hpp": { lang: "cpp", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".cs": { lang: "java", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".py": { lang: "python", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".md": { lang: "markdown", chunkSize: 128 * 13, chunkOverlap: 128 },
-      ".html": { lang: "html", chunkSize: 128 * 13, chunkOverlap: 128 },
-      ".java": { lang: "java", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".rs": { lang: "rust", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".scala": { lang: "scala", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".tex": { lang: "latex", chunkSize: 128 * 13, chunkOverlap: 128 },
-      ".rb": { lang: "ruby", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".rst": { lang: "rst", chunkSize: 128 * 13, chunkOverlap: 128 },
-      ".proto": { lang: "proto", chunkSize: 128 * 13, chunkOverlap: 128 },
-      ".php": { lang: "php", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".sol": { lang: "sol", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".swift": { lang: "swift", chunkSize: 128 * 8, chunkOverlap: 128 },
-      ".ipynb": { lang: "json", chunkSize: 128 * 13, chunkOverlap: 128 },
+      ".js": { lang: "js", ...defaultChunkConfig.code },
+      ".json": { lang: "js", ...defaultChunkConfig.text },
+      ".jsx": { lang: "js", ...defaultChunkConfig.code },
+      ".ts": { lang: "js", ...defaultChunkConfig.code },
+      ".tsx": { lang: "js", ...defaultChunkConfig.code },
+      ".go": { lang: "go", ...defaultChunkConfig.code },
+      ".cpp": { lang: "cpp", ...defaultChunkConfig.code },
+      ".c": { lang: "cpp", ...defaultChunkConfig.code },
+      ".h": { lang: "cpp", ...defaultChunkConfig.code },
+      ".hpp": { lang: "cpp", ...defaultChunkConfig.code },
+      ".cs": { lang: "java", ...defaultChunkConfig.code },
+      ".py": { lang: "python", ...defaultChunkConfig.code },
+      ".md": { lang: "markdown", ...defaultChunkConfig.text },
+      ".html": { lang: "html", ...defaultChunkConfig.text },
+      ".java": { lang: "java", ...defaultChunkConfig.code },
+      ".rs": { lang: "rust", ...defaultChunkConfig.code },
+      ".scala": { lang: "scala", ...defaultChunkConfig.code },
+      ".tex": { lang: "latex", ...defaultChunkConfig.text },
+      ".rb": { lang: "ruby", ...defaultChunkConfig.code },
+      ".rst": { lang: "rst", ...defaultChunkConfig.text },
+      ".proto": { lang: "proto", ...defaultChunkConfig.text },
+      ".php": { lang: "php", ...defaultChunkConfig.code },
+      ".sol": { lang: "sol", ...defaultChunkConfig.code },
+      ".swift": { lang: "swift", ...defaultChunkConfig.code },
+      // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
     };
 
     if (lang[ext]) {
@@ -217,8 +227,7 @@ export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
       );
     } else {
       splitter[ext] = new RecursiveCharacterTextSplitter({
-        chunkSize: 128 * 13,
-        chunkOverlap: 128,
+        ...defaultChunkConfig.text,
       });
     }
   }
