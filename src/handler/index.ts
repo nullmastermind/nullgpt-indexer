@@ -13,7 +13,7 @@ import { db, docsDir, indexSaveDir, vectorStores } from "../const";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";
-import { forEach, last, throttle, uniqueId } from "lodash";
+import { forEach, throttle, uniqueId } from "lodash";
 import CachedOpenAIEmbeddings from "../utility/CachedOpenAIEmbeddings";
 
 const cacheTTLMillis = 7 * 24 * 60 * 60 * 1000;
