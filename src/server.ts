@@ -7,6 +7,7 @@ import docsHandler from "./handler/docs";
 import removeIndexHandler from "./handler/remove-index";
 import managerHandler from "./handler/manager";
 import addDocHandler from "./handler/add-doc";
+import gitPullHandler from "./handler/git-pull";
 
 require("./const");
 
@@ -28,6 +29,7 @@ app.get("/api/docs", docsHandler);
 app.get("/api/manager", managerHandler);
 app.post("/api/update-doc", updateDocHandler);
 app.post("/api/add-doc", addDocHandler);
+app.post("/api/git-pull", gitPullHandler);
 
 app.listen(port, () => {
   console.log(`The nullgpt-indexer service is now available.`);
