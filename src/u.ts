@@ -153,6 +153,7 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
       .filter((v) => v.length > 0)
       .filter((v) => !v.startsWith("using"));
     if (lines.length === 0) {
+      console.log("ignored c# import");
       return false;
     }
   } else if (
@@ -167,6 +168,7 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
         return !(v.startsWith("const") || v.startsWith("import"));
       });
     if (lines.length === 0) {
+      console.log("ignored js import");
       return false;
     }
   }
