@@ -145,13 +145,27 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
     return false;
   }
 
-  // filter c# import
   if ([".cs"].includes(path.extname(doc.metadata.source))) {
+    // ignore c# import
     const lines = doc.pageContent
       .split("\n")
       .map((v) => v.trim())
       .filter((v) => v.length > 0)
       .filter((v) => !v.startsWith("using"));
+    if (lines.length === 0) {
+      return false;
+    }
+  } else if (
+    [".js", ".jsx", ".ts", "tsx"].includes(path.extname(doc.metadata.source))
+  ) {
+    // ignore js import
+    const lines = doc.pageContent
+      .split("\n")
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .filter((v) => {
+        return !(v.startsWith("const") || v.startsWith("import"));
+      });
     if (lines.length === 0) {
       return false;
     }
