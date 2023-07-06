@@ -134,6 +134,12 @@ export async function getIgnores(
   return [keys, mapValue];
 }
 
+export function isOnlySpecial(content: string) {
+  const specialRegex = /^[^\p{L}\s]+$/u;
+
+  return specialRegex.test(content);
+}
+
 export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   // filter hash
   if (
@@ -169,6 +175,20 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
       });
     if (lines.length === 0) {
       console.log("ignored js import");
+      return false;
+    }
+  } else {
+    // ignore if all lines contains special symbol only
+    const lines = doc.pageContent
+      .split("\n")
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .filter((v) => {
+        v = v.split(" ").join("").split("\t").join("");
+        return !isOnlySpecial(v);
+      });
+    if (lines.length === 0) {
+      console.log("ignored special characters");
       return false;
     }
   }
