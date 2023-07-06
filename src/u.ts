@@ -177,20 +177,20 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
       console.log("ignored js import");
       return false;
     }
-  } else {
-    // ignore if all lines contains special symbol only
-    const lines = doc.pageContent
-      .split("\n")
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0)
-      .filter((v) => {
-        v = v.split(" ").join("").split("\t").join("");
-        return !isOnlySpecial(v);
-      });
-    if (lines.length === 0) {
-      console.log("ignored special characters");
-      return false;
-    }
+  }
+
+  // ignore if all lines contains special symbol only
+  const lines = doc.pageContent
+    .split("\n")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0)
+    .filter((v) => {
+      v = v.split(" ").join("").split("\t").join("");
+      return !isOnlySpecial(v);
+    });
+  if (lines.length === 0) {
+    console.log("ignored special characters");
+    return false;
   }
 
   return true;
