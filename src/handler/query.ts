@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { getVectorStore } from "../u";
 import { encode } from "gpt-3-encoder";
 import { Document } from "langchain/document";
-import { forEach } from "lodash";
+import { forEach, map } from "lodash";
 
 const DEFAULT_MAX_K = 13;
 
@@ -66,21 +66,31 @@ const queryHandler = async (req: Request, res: Response) => {
   });
 
   data.sort((a, b) => {
-    const s1 = `${a[0].metadata.source}`;
-    const s2 = `${b[0].metadata.source}`;
+    return a[1] - b[1];
+  });
 
-    if (s1 === s2) {
+  const dataBySource: Record<string, [Document, number][]> = {};
+
+  forEach(data, (item) => {
+    const source = item[0].metadata.source;
+    if (!dataBySource[source]) {
+      dataBySource[source] = [];
+    }
+    dataBySource[source].push(item);
+  });
+
+  forEach(dataBySource, (data, source) => {
+    data.sort((a, b) => {
       const from1 = a[0]?.metadata?.loc?.lines?.from || 0;
       const from2 = b[0]?.metadata?.loc?.lines?.from || 0;
 
       return from1 - from2;
-    }
-
-    return s1.localeCompare(s2);
+    });
+    dataBySource[source] = data;
   });
 
   res.status(200).json({
-    data: data,
+    data: map(dataBySource, (value) => value).flat(),
     tokens: totalTokens.current,
   });
 };
