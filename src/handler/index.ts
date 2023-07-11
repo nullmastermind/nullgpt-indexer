@@ -15,6 +15,7 @@ import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";
 import { forEach, throttle, uniqueId } from "lodash";
 import CachedOpenAIEmbeddings from "../utility/CachedOpenAIEmbeddings";
+import CachedCohereEmbeddings from "../utility/CachedCohereEmbeddings";
 
 const cacheTTLMillis = 7 * 24 * 60 * 60 * 1000;
 
@@ -153,7 +154,7 @@ const indexHandler = async (req: Request, res: Response) => {
     await vectorStore.save(saveTo);
     await writeFile(indexedHashFile, JSON.stringify(indexedHash));
     await (
-      vectorStore.embeddings as CachedOpenAIEmbeddings
+      vectorStore.embeddings as CachedOpenAIEmbeddings | CachedCohereEmbeddings
     ).ensureAllDataSaved();
 
     vectorStores[docId] = vectorStore;
