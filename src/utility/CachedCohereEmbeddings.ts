@@ -22,7 +22,7 @@ class CachedCohereEmbeddings extends CohereEmbeddings {
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const key = createMd5([...texts, ":COHERE_EMBEDDINGS"].join(""));
+    const key = createMd5([...texts, ":COHERE_EMBEDDINGS_1.0"].join(""));
     const dbVal = await db.get(key);
 
     this.waitingProcesses.push(db.set(`${key}:updatedAt`, new Date()));
