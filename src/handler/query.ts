@@ -28,7 +28,9 @@ const queryHandler = async (req: Request, res: Response) => {
   const includedSources = new Set<string>();
 
   forEach(results, (r) => {
-    // if (r[1] > maxScore) return false;
+    r[1] = 0.0; // This will fake the score of the result to handle the logic below, because "vectorStore" returns the wrong score.
+
+    if (r[1] > maxScore) return false;
 
     if (lastScore.current === -1) {
       lastScore.current = r[1];
