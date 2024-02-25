@@ -262,6 +262,7 @@ export const getVectorStore = async (
         openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
         maxConcurrency: +(process.env.MAX_CONCURRENCY || "5"),
         maxRetries: 10,
+        modelName: process.env.EMBEDDING_MODEL_NAME || undefined,
       });
     }
 

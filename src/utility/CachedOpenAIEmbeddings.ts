@@ -23,7 +23,7 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const key = createMd5(texts.join(""));
+    const key = [this.modelName, createMd5(texts.join(""))].join("_");
     const dbVal = await db.get(key);
 
     this.waitingProcesses.push(db.set(`${key}:updatedAt`, new Date()));
