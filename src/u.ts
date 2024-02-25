@@ -314,3 +314,19 @@ export function gitPull(cwd: string): Promise<string> {
     });
   });
 }
+
+export function gitAddSafeDir(cwd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    exec(
+      "git config --global --add safe.directory *",
+      { cwd },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve([stdout, stderr].join("\n\n"));
+        }
+      }
+    );
+  });
+}
