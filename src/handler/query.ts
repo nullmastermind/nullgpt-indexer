@@ -4,8 +4,6 @@ import { encode } from "gpt-3-encoder";
 import { Document } from "langchain/document";
 import { forEach, map } from "lodash";
 
-const DEFAULT_MAX_K = 13;
-
 const queryHandler = async (req: Request, res: Response) => {
   const {
     doc_id: docId,
@@ -22,7 +20,7 @@ const queryHandler = async (req: Request, res: Response) => {
   const ignoredHashesSet = new Set<string>(ignoreHashes);
   const results = await vectorStore.similaritySearchWithScore(
     query,
-    Math.max(k, DEFAULT_MAX_K) + ignoredHashesSet.size
+    k + ignoredHashesSet.size
   );
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
