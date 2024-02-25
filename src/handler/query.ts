@@ -30,7 +30,7 @@ const queryHandler = async (req: Request, res: Response) => {
   const includedSources = new Set<string>();
 
   forEach(results, (r) => {
-    if (r[1] > maxScore) return false;
+    // if (r[1] > maxScore) return false;
 
     if (lastScore.current === -1) {
       lastScore.current = r[1];
