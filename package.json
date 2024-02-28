@@ -1,14 +1,30 @@
 {
   "name": "nullgpt-indexer",
   "version": "1.0.1",
-  "main": "index.js",
   "license": "MIT",
+  "main": "index.js",
   "scripts": {
-    "start:dev": "npx ts-node ./src/server.ts",
     "build": "rimraf ./build && tsc",
-    "start": "node ./build/server.js",
+    "format": "prettier --write src/**/*.ts",
     "package": "yarn build && rimraf ./dist && node build.js",
-    "format": "prettier --write src/**/*.ts"
+    "start": "node ./build/server.js",
+    "start:dev": "ts-node ./src/server.ts"
+  },
+  "dependencies": {
+    "better-queue": "^3.8.12",
+    "cohere-ai": "^6.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "faiss-node": "^0.2.1",
+    "fast-glob": "^3.2.12",
+    "fs-extra": "^11.1.1",
+    "gpt-3-encoder": "^1.1.4",
+    "ignore": "^5.2.4",
+    "langchain": "^0.0.96",
+    "level": "^8.0.0",
+    "lodash": "^4.17.21",
+    "openai": "^4.28.0"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
@@ -26,22 +42,7 @@
     "prettier-plugin-sh": "^0.14.0",
     "prettier-plugin-sort-json": "^3.1.0",
     "rimraf": "^5.0.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.1.5"
-  },
-  "dependencies": {
-    "better-queue": "^3.8.12",
-    "cohere-ai": "^6.2.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "faiss-node": "^0.2.1",
-    "fast-glob": "^3.2.12",
-    "fs-extra": "^11.1.1",
-    "gpt-3-encoder": "^1.1.4",
-    "ignore": "^5.2.4",
-    "langchain": "^0.0.96",
-    "level": "^8.0.0",
-    "lodash": "^4.17.21",
-    "openai": "^4.28.0"
   }
 }
