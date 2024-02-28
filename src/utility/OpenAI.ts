@@ -1,33 +1,35 @@
-import { pathExists, readFile } from 'fs-extra';
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from 'openai/src/resources/chat/completions';
 
-import summary from './prompts/summary.json';
+import Strategy from './Strategy';
+import { SummaryStrategy } from './SummarySplitter';
 
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   maxRetries: 10,
 });
 
-export const summaryCode = async (fileFullPath: string): Promise<string | null> => {
-  if (!(await pathExists(fileFullPath))) return null;
-
-  const code = await readFile(fileFullPath, 'utf-8');
+export const summaryByStrategy = async (
+  content: string,
+  strategy: SummaryStrategy,
+): Promise<string | null> => {
   const completion = await openai.chat.completions.create({
     messages: [
-      ...(summary as ChatCompletionMessageParam[]),
+      ...Strategy[strategy],
       {
         role: 'user',
-        content: `${fileFullPath}\n\n\`\`\`${code}\`\`\``,
+        content,
       },
     ],
     model: 'gpt-3.5-turbo',
+    temperature: 0,
   });
   const summarized = completion.choices?.[0]?.message?.content || null;
 
   if (summarized) {
-    return `${fileFullPath}\n${summarized}`;
+    return summarized;
   }
 
-  return null;
+  throw {
+    message: '`summaryByStrategy` failed',
+  };
 };

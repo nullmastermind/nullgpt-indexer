@@ -10,7 +10,6 @@ import managerHandler from './handler/manager';
 import queryHandler from './handler/query';
 import removeIndexHandler from './handler/remove-index';
 import updateDocHandler from './handler/update-doc';
-import { summaryCode } from './utility/OpenAI';
 
 require('./constant');
 
