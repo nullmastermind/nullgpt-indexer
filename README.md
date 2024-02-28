@@ -1,32 +1,27 @@
-[![Unlock the Power of ChatGPT: A Step-by-Step Guide to Using it with Private Documents](https://img.youtube.com/vi/Oo7zh4YWLc8/0.jpg)](https://youtu.be/Oo7zh4YWLc8)
+# ChatGPT Web
 
-##### A section of the repository https://github.com/nullmastermind/chatgpt-web is dedicated to providing you with a method to communicate using confidential documentation.
+This repository contains a section dedicated to providing a method for communication using confidential documentation. Main repository: https://github.com/nullmastermind/chatgpt-web
+
+## Installation
+
+Make sure you have Node.js version 18.16.1 or higher installed.
+
+Create a `.env` file with the required content. You can use the `.env.example` file as a reference and set the value for `OPENAI_API_KEY`.
 
 ```shell
-# Require node version >= v18.16.1
-
+# Install dependencies
 corepack enable
 yarn install
+
+# Build the project
 yarn build
+
+# Start the application
 yarn start
 ```
 
-To create an index, create a folder inside the `docs` folder and call the API. Please import `nullgpt_indexer.json` to https://hoppscotch.io/ to see some API examples. Just run and go to https://gpt.dongnv.dev to chat with your private documentation.
+## Usage
 
-Don't forget to create a `.env` file with example content from the `.env.example` file and add the value for `OPENAI_API_KEY`.
+To create an index, go to https://dongnv.dev and click the cog icon (to the left of the document select UI).
 
-### Note:
 
-- `doc_id` is the same as the folder name inside `docs`
-- You have the option to create an alias file to index other directories that exist on your disk.
-
-For example, create a file called `docs/sample_documents/1.alias` with the following content:
-
-```
-D:\documents\sample_documents1
-E:\documents\sample_documents2
-G:\documents\sample_documents3
-G:\documents\document.txt
-```
-
-Next, you can call the index API using the `doc_id` as `sample_documents`.
