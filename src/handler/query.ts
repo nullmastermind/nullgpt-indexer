@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getVectorStore } from "../u";
+import { getVectorStore } from "../utility/common";
 import { encode } from "gpt-3-encoder";
 import { Document } from "langchain/document";
 import { forEach, map } from "lodash";

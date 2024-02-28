@@ -10,7 +10,7 @@ import addDocHandler from "./handler/add-doc";
 import gitPullHandler from "./handler/git-pull";
 import getVersionHandler from "./handler/get-version";
 
-require("./const");
+require("./constant");
 
 // if (embeddingsType === "tensorflow") {
 //   require("@tensorflow/tfjs-core"); /* or @tensorflow/tfjs-node */
@@ -18,7 +18,7 @@ require("./const");
 // }
 
 const app = express();
-const port = 3456;
+const port = process.env.SERVER_PORT || 3456;
 
 app.use(express.json());
 app.use(cors()); // Add this line to enable CORS for all routes
@@ -34,8 +34,10 @@ app.post("/api/git-pull", gitPullHandler);
 app.get("/api/get-version", getVersionHandler);
 
 app.listen(port, () => {
-  console.log(`The nullgpt-indexer service is now available.`);
   console.log(
-    "Please visit https://gpt.dongnv.dev to engage in a conversation with your documents."
+    `The nullgpt-indexer service is now available at: http://localhost:${port}`,
+  );
+  console.log(
+    "Please visit https://gpt.dongnv.dev to engage in a conversation with your documents.",
   );
 });

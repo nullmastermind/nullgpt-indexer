@@ -1,8 +1,8 @@
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { ConfigurationParameters } from "openai";
 import { OpenAIEmbeddingsParams } from "langchain/embeddings/openai";
-import { createMd5 } from "../u";
-import { db } from "../const";
+import { createMd5 } from "./common";
+import { db } from "../constant";
 
 class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
   private readonly waitingProcesses: any[];

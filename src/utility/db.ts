@@ -1,5 +1,5 @@
 import path from "path";
-import { indexSaveDir } from "../const";
+import { indexSaveDir } from "../constant";
 
 const { Level } = require("level");
 

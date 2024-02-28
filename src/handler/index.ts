@@ -7,9 +7,9 @@ import {
   getVectorStore,
   isMD5,
   listFilesRecursively,
-} from "../u";
+} from "../utility/common";
 import { pathExists, readJson, writeFile } from "fs-extra";
-import { db, docsDir, indexSaveDir, vectorStores } from "../const";
+import { db, docsDir, indexSaveDir, vectorStores } from "../constant";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import Queue from "better-queue";
 import { FaissStore } from "langchain/vectorstores/faiss";

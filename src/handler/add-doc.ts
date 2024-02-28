@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { ensureDir } from "fs-extra";
-import { docsDir } from "../const";
+import { docsDir } from "../constant";
 import path from "path";
 
 const addDocHandler = async (req: Request, res: Response) => {

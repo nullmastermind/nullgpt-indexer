@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import path from "path";
-import { docsDir } from "../const";
+import { docsDir } from "../constant";
 import { ensureFile, pathExists, writeFile } from "fs-extra";
 
 const updateDocHandler = async (req: Request, res: Response) => {

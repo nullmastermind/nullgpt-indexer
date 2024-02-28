@@ -3,16 +3,16 @@ import path from "path";
 import * as fs from "fs-extra";
 import { pathExists } from "fs-extra";
 import fg from "fast-glob";
-import { indexSaveDir, splitter, vectorStores } from "./const";
+import { indexSaveDir, splitter, vectorStores } from "../constant";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { FaissStore } from "langchain/vectorstores/faiss";
 import { createHash } from "crypto";
-import CachedOpenAIEmbeddings from "./utility/CachedOpenAIEmbeddings";
+import CachedOpenAIEmbeddings from "./CachedOpenAIEmbeddings";
 import ignore, { Ignore } from "ignore";
 import { forEach } from "lodash";
 import { Document } from "langchain/document";
 import { Embeddings } from "langchain/embeddings";
-import CachedCohereEmbeddings from "./utility/CachedCohereEmbeddings";
+import CachedCohereEmbeddings from "./CachedCohereEmbeddings";
 
 export async function listFilesRecursively(
   dir: string,

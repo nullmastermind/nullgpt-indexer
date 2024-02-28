@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { gitAddSafeDir, gitPull } from "../u";
+import { gitAddSafeDir, gitPull } from "../utility/common";
 
 const gitPullHandler = async (req: Request, res: Response) => {
   const { cwd } = req.body;

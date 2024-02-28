@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { pathExists, pathExistsSync, readdir, readFile } from "fs-extra";
 import path from "path";
-import { docsDir } from "../const";
+import { docsDir } from "../constant";
 import { map } from "lodash";
-import { isDirectory } from "../u";
+import { isDirectory } from "../utility/common";
 
 const managerHandler = async (req: Request, res: Response) => {
   const { doc_id: docId } = req.query as Record<any, string>;

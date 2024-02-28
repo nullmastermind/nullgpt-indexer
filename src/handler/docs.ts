@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { readdir } from "fs-extra";
-import { db, docsDir, indexSaveDir } from "../const";
-import { isDirectory } from "../u";
+import { db, docsDir, indexSaveDir } from "../constant";
+import { isDirectory } from "../utility/common";
 import { join } from "path";
 
 const docsHandler = async (req: Request, res: Response) => {
