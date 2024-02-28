@@ -19,17 +19,49 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
-    const maxTokens = +(process.env.SUMMARY_MAX_TOKENS || 16000);
+    const inputText = text;
+    const strategyTokens = await countTokens(JSON.stringify(Strategy[this.summaryStrategy]));
+    const maxTokens = +(process.env.SUMMARY_MAX_TOKENS || 16000) - strategyTokens;
     const currentTokens = await countTokens(text);
 
     if (currentTokens > maxTokens) {
-      console.warn(
-        'The maximum token limit has been reached; using the default strategy for splitting text.',
+      const parts = await super.splitText(text);
+      const requestTexts = [];
+      let requestText = '';
+
+      for (const part of parts) {
+        const temp = [requestText, part].join('\n');
+        const tokens = await countTokens(temp);
+
+        if (tokens >= maxTokens) {
+          requestTexts.push(requestText);
+          requestText = part;
+          continue;
+        }
+
+        requestText = temp;
+      }
+
+      if (requestText) {
+        requestTexts.push(requestText);
+      }
+
+      const summaries = await Promise.all(
+        requestTexts.map((text) => summaryByStrategy(text, this.summaryStrategy)),
       );
-      return super.splitText(text);
+      const tempText = summaries.join('\n');
+
+      if ((await countTokens(tempText)) < maxTokens) {
+        text = tempText;
+      } else {
+        console.warn(
+          'The maximum token limit has been reached; using the default strategy for splitting text.',
+        );
+        return super.splitText(text);
+      }
     }
 
-    const key = [this.summaryStrategyKey, createMd5(text)].join(':');
+    const key = [this.summaryStrategyKey, createMd5(inputText)].join(':');
     const cachedValue = await db.get(key);
 
     if (cachedValue) {
