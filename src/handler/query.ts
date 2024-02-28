@@ -1,8 +1,9 @@
-import { Request, Response } from "express";
-import { getVectorStore } from "../utility/common";
-import { encode } from "gpt-3-encoder";
-import { Document } from "langchain/document";
-import { forEach, map } from "lodash";
+import { Request, Response } from 'express';
+import { encode } from 'gpt-3-encoder';
+import { Document } from 'langchain/document';
+import { forEach, map } from 'lodash';
+
+import { getVectorStore } from '../utility/common';
 
 const queryHandler = async (req: Request, res: Response) => {
   const {
@@ -18,10 +19,7 @@ const queryHandler = async (req: Request, res: Response) => {
   } = req.body;
   const vectorStore = await getVectorStore(docId, docId, apiKey);
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const results = await vectorStore.similaritySearchWithScore(
-    query,
-    k + ignoredHashesSet.size
-  );
+  const results = await vectorStore.similaritySearchWithScore(query, k + ignoredHashesSet.size);
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
   const lastScore = { current: -1 };

@@ -1,9 +1,7 @@
-import { createMd5 } from "./common";
-import { db } from "../constant";
-import {
-  CohereEmbeddings,
-  CohereEmbeddingsParams,
-} from "langchain/embeddings/cohere";
+import { CohereEmbeddings, CohereEmbeddingsParams } from 'langchain/embeddings/cohere';
+
+import { db } from '../constant';
+import { createMd5 } from './common';
 
 class CachedCohereEmbeddings extends CohereEmbeddings {
   private readonly waitingProcesses: any[];
@@ -14,7 +12,7 @@ class CachedCohereEmbeddings extends CohereEmbeddings {
     fields?: Partial<CohereEmbeddingsParams> & {
       verbose?: boolean;
       apiKey?: string;
-    }
+    },
   ) {
     super(fields);
     this.waitingProcesses = [];
@@ -22,7 +20,7 @@ class CachedCohereEmbeddings extends CohereEmbeddings {
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const key = createMd5([...texts, ":COHERE_EMBEDDINGS"].join(""));
+    const key = createMd5([...texts, ':COHERE_EMBEDDINGS'].join(''));
     const dbVal = await db.get(key);
 
     this.waitingProcesses.push(db.set(`${key}:updatedAt`, new Date()));
@@ -37,8 +35,8 @@ class CachedCohereEmbeddings extends CohereEmbeddings {
     const result = await super.embedDocuments(texts);
 
     if (texts.length > 0 && result.length === 0) {
-      console.log("API error");
-      throw { error: "API error" };
+      console.log('API error');
+      throw { error: 'API error' };
     }
 
     await db.set(key, result);

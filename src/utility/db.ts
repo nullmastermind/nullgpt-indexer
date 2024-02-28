@@ -1,14 +1,15 @@
-import path from "path";
-import { indexSaveDir } from "../constant";
+import path from 'path';
 
-const { Level } = require("level");
+import { indexSaveDir } from '../constant';
+
+const { Level } = require('level');
 
 class Db {
   private db: any;
 
   constructor(name: string) {
     this.db = new Level(path.join(indexSaveDir, name), {
-      valueEncoding: "json",
+      valueEncoding: 'json',
     });
   }
 

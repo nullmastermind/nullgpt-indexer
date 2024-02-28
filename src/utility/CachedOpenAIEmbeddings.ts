@@ -1,8 +1,9 @@
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { ConfigurationParameters } from "openai";
-import { OpenAIEmbeddingsParams } from "langchain/embeddings/openai";
-import { createMd5 } from "./common";
-import { db } from "../constant";
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { OpenAIEmbeddingsParams } from 'langchain/embeddings/openai';
+import { ConfigurationParameters } from 'openai';
+
+import { db } from '../constant';
+import { createMd5 } from './common';
 
 class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
   private readonly waitingProcesses: any[];
@@ -15,7 +16,7 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
         verbose?: boolean;
         openAIApiKey?: string;
       },
-    configuration?: ConfigurationParameters
+    configuration?: ConfigurationParameters,
   ) {
     super(fields, configuration);
     this.waitingProcesses = [];
@@ -23,7 +24,7 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const key = [this.modelName, createMd5(texts.join(""))].join("_");
+    const key = [this.modelName, createMd5(texts.join(''))].join('_');
     const dbVal = await db.get(key);
 
     this.waitingProcesses.push(db.set(`${key}:updatedAt`, new Date()));

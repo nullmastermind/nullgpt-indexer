@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
-import { gitAddSafeDir, gitPull } from "../utility/common";
+import { Request, Response } from 'express';
+
+import { gitAddSafeDir, gitPull } from '../utility/common';
 
 const gitPullHandler = async (req: Request, res: Response) => {
   const { cwd } = req.body;
@@ -9,7 +10,7 @@ const gitPullHandler = async (req: Request, res: Response) => {
     return res.status(200).send(stdio);
   } catch (e: any) {
     try {
-      if (e.toString().includes("git config --global --add safe.directory")) {
+      if (e.toString().includes('git config --global --add safe.directory')) {
         await gitAddSafeDir(cwd);
         const stdio = await gitPull(cwd);
         return res.status(200).send(stdio);

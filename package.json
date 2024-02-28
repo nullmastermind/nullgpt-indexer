@@ -7,9 +7,11 @@
     "start:dev": "npx ts-node ./src/server.ts",
     "build": "rimraf ./build && tsc",
     "start": "node ./build/server.js",
-    "package": "yarn build && rimraf ./dist && node build.js"
+    "package": "yarn build && rimraf ./dist && node build.js",
+    "format": "prettier --write src/**/*.ts"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/better-queue": "^3.8.3",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
@@ -19,6 +21,10 @@
     "@types/node": "^20.3.1",
     "nexe": "^4.0.0-rc.2",
     "prettier": "^3.2.5",
+    "prettier-plugin-organize-imports": "^3.2.4",
+    "prettier-plugin-packagejson": "^2.4.12",
+    "prettier-plugin-sh": "^0.14.0",
+    "prettier-plugin-sort-json": "^3.1.0",
     "rimraf": "^5.0.1",
     "typescript": "^5.1.5"
   },
