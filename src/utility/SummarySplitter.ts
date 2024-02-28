@@ -19,7 +19,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
-    const inputText = text;
+    const key = [this.summaryStrategyKey, createMd5(text)].join(':');
     const strategyTokens = await countTokens(JSON.stringify(Strategy[this.summaryStrategy]));
     const maxTokens = +(process.env.SUMMARY_MAX_TOKENS || 16000) - strategyTokens;
     const currentTokens = await countTokens(text);
@@ -61,7 +61,6 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
       }
     }
 
-    const key = [this.summaryStrategyKey, createMd5(inputText)].join(':');
     const cachedValue = await db.get(key);
 
     if (cachedValue) {
