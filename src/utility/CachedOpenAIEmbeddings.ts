@@ -1,6 +1,5 @@
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { OpenAIEmbeddingsParams } from 'langchain/embeddings/openai';
-import { ConfigurationParameters } from 'openai';
 
 import { db } from '../constant';
 import { createMd5 } from './common';
@@ -16,7 +15,7 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
         verbose?: boolean;
         openAIApiKey?: string;
       },
-    configuration?: ConfigurationParameters,
+    configuration?: any,
   ) {
     super(fields, configuration);
     this.waitingProcesses = [];
