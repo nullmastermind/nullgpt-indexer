@@ -1,6 +1,5 @@
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
-import { storage } from '../constant';
 import { summaryByStrategy } from './OpenAI';
 import Strategy from './Strategy';
 import { countTokens, createMd5 } from './common';
@@ -19,16 +18,6 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
-    const key = [this.summaryStrategyKey, createMd5(text)].join(':');
-    const cachedValue = await storage.get(key);
-
-    if (cachedValue) {
-      if (Array.isArray(cachedValue)) {
-        return cachedValue;
-      }
-      return [cachedValue];
-    }
-
     const strategyTokens = await countTokens(JSON.stringify(Strategy[this.summaryStrategy]));
     const maxTokens = +(process.env.SUMMARY_MAX_TOKENS || 16000) - strategyTokens;
     const currentTokens = await countTokens(text);
@@ -63,15 +52,11 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
       if ((await countTokens(tempText)) < maxTokens) {
         text = tempText;
       } else {
-        await db.set(key, summaries);
-
         return summaries;
       }
     }
 
     const summary = await summaryByStrategy(text, this.summaryStrategy);
-
-    await storage.set(key, summary);
 
     return [summary];
   }
