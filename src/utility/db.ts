@@ -1,11 +1,10 @@
+import { Level } from 'level';
 import path from 'path';
 
 import { indexSaveDir } from '../constant';
 
-const { Level } = require('level');
-
 class Db {
-  private db: any;
+  private readonly db: any;
 
   constructor(name: string) {
     this.db = new Level(path.join(indexSaveDir, name), {
@@ -14,7 +13,15 @@ class Db {
   }
 
   async get(key: string) {
-    return this.db.get(key).catch(() => Promise.resolve(undefined));
+    let value = this.db.get(key);
+
+    try {
+      value = await this.db.get(key);
+      // This field is for removing trash in features.
+      await this.db.set(`${key}:get_at`, Date.now());
+    } catch (e) {}
+
+    return value;
   }
 
   async set(key: string, value: any) {
@@ -22,6 +29,9 @@ class Db {
   }
 
   async del(key: string) {
+    try {
+      await this.db.del(`${key}:get_at`);
+    } catch (e) {}
     return this.db.del(key);
   }
 
