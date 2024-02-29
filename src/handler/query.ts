@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
 import { encode } from 'gpt-3-encoder';
 import { Document } from 'langchain/document';
+import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, map } from 'lodash';
 
 import { getVectorStore } from '../utility/common';
 
-const queryHandler = async (req: Request, res: Response) => {
+const queryByVectorStore = async (
+  req: Request,
+  vectorStore: FaissStore,
+  strategy: 'document' | 'code',
+) => {
   const {
     doc_id: docId,
     api_key: apiKey,
@@ -17,7 +22,6 @@ const queryHandler = async (req: Request, res: Response) => {
     scoreChangeThreshold = 0.03,
     ignoreHashes = [],
   } = req.body;
-  const vectorStore = await getVectorStore(docId, docId, apiKey);
   const ignoredHashesSet = new Set<string>(ignoreHashes);
   const results = await vectorStore.similaritySearchWithScore(query, k + ignoredHashesSet.size);
   const data: [Document, number][] = [];
@@ -86,15 +90,30 @@ const queryHandler = async (req: Request, res: Response) => {
     });
     dataBySource[source] = data.map((doc) => {
       if (doc?.[0]?.metadata) {
-        doc[0].metadata.summary = !!process.env.SUMMARY_MODEL_NAME;
+        doc[0].metadata.summary = strategy === 'document';
       }
       return doc;
     });
   });
 
-  res.status(200).json({
+  return {
     data: map(dataBySource, (value) => value).flat(),
     tokens: totalTokens.current,
+  };
+};
+
+const queryHandler = async (req: Request, res: Response) => {
+  const { doc_id: docId, api_key: apiKey } = req.body;
+  const codeVectorStore = await getVectorStore(docId + '+code', docId, apiKey);
+  const docVectorStore = await getVectorStore(docId, docId, apiKey);
+  const [docData, codeData] = await Promise.all([
+    queryByVectorStore(req, docVectorStore, 'document'),
+    queryByVectorStore(req, codeVectorStore, 'code'),
+  ]);
+
+  res.status(200).json({
+    data: [...docData.data, ...codeData.data],
+    tokens: docData.tokens + codeData.tokens,
   });
 };
 

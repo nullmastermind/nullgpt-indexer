@@ -64,7 +64,7 @@ const indexerQueue = new Queue<IndexerQueueInput>(
                 .join('/'),
             ].join('');
 
-            doc.pageContent = `DOCUMENT NAME: ${docName}\n\n${doc.pageContent}`;
+            doc.pageContent = `${strategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${docName}\n\n${doc.pageContent}`;
 
             doc.metadata.source = '/home/fakeuser' + docName;
             doc.metadata['md5'] = md5;
