@@ -30,7 +30,7 @@ const summaryTaskHandler = async (
 // Create a better-queue instance with the task handler and concurrency of 3
 const summaryQueue = new Queue(summaryTaskHandler, {
   concurrent: 3,
-  maxRetries: 3,
+  maxRetries: 10,
   retryDelay: 30000,
 });
 
