@@ -15,7 +15,7 @@ const docsHandler = async (req: Request, res: Response) => {
   const indexedDocIds = new Set<string>();
 
   const handleFile = async (f: string, parent: string, isIndexed: boolean) => {
-    if (f === '.storage') return;
+    if (f === '.storage' || f.endsWith('+code')) return;
     if (await isDirectory(join(parent, f))) {
       const extensions = await storage.get(`${f}:extensions`);
 
