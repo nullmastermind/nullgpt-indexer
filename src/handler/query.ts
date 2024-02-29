@@ -84,7 +84,12 @@ const queryHandler = async (req: Request, res: Response) => {
 
       return from1 - from2;
     });
-    dataBySource[source] = data;
+    dataBySource[source] = data.map((doc) => {
+      if (doc?.[0]?.metadata) {
+        doc[0].metadata.summary = !!process.env.SUMMARY_MODEL_NAME;
+      }
+      return doc;
+    });
   });
 
   res.status(200).json({
