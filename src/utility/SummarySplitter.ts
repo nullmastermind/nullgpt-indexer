@@ -1,6 +1,6 @@
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
-import { summaryByStrategy } from './OpenAI';
+import { enqueueSummaryByStrategy } from './OpenAI';
 import Strategy from './Strategy';
 import { countTokens, createMd5 } from './common';
 
@@ -45,7 +45,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
       }
 
       const summaries = await Promise.all(
-        requestTexts.map((text) => summaryByStrategy(text, this.summaryStrategy)),
+        requestTexts.map((text) => enqueueSummaryByStrategy(text, this.summaryStrategy)),
       );
       const tempText = summaries.join('\n');
 
@@ -56,7 +56,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
       }
     }
 
-    const summary = await summaryByStrategy(text, this.summaryStrategy);
+    const summary = await enqueueSummaryByStrategy(text, this.summaryStrategy);
 
     return [summary];
   }
