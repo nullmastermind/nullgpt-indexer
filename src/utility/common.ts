@@ -165,8 +165,11 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   return true;
 };
 
-export const getSplitter = (ext: string): RecursiveCharacterTextSplitter => {
-  if (process.env.SUMMARY_MODEL_NAME?.length > 0) {
+export const getSplitter = (
+  ext: string,
+  strategy: 'document' | 'code',
+): RecursiveCharacterTextSplitter => {
+  if (process.env.SUMMARY_MODEL_NAME?.length > 0 && strategy === 'document') {
     let summaryStrategy = 'code';
 
     if (['.md', '.txt', '.mdx', '.html', '.htm', '.odt', '.xml', '.csv', '.rtf'].includes(ext)) {
