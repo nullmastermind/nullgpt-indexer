@@ -6,7 +6,7 @@ import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, throttle, uniqueId } from 'lodash';
 import path from 'path';
 
-import { db, docsDir, indexSaveDir, vectorStores } from '../constant';
+import { storage, docsDir, indexSaveDir, vectorStores } from '../constant';
 import CachedCohereEmbeddings from '../utility/CachedCohereEmbeddings';
 import CachedOpenAIEmbeddings from '../utility/CachedOpenAIEmbeddings';
 import {
@@ -152,25 +152,25 @@ const indexHandler = async (req: Request, res: Response) => {
     delete vectorStores[tempVectorStoreId];
   }
 
-  await db.set(`${docId}:extensions`, extensions);
-  await db.set(`${docId}:indexAt`, new Date());
+  await storage.set(`${docId}:extensions`, extensions);
+  await storage.set(`${docId}:indexAt`, new Date());
 
   // remove unused keys
-  db.eachKey(async (key) => {
+  storage.eachKey(async (key) => {
     if (isMD5(key)) {
-      const updatedAt = await db.get(`${key}:updatedAt`);
+      const updatedAt = await storage.get(`${key}:updatedAt`);
       if (updatedAt === undefined) {
-        db.del(key).finally();
+        storage.del(key).finally();
         console.log('removed:', key);
       } else {
-        const keyDocId = await db.get(`${key}:doc_id`);
+        const keyDocId = await storage.get(`${key}:doc_id`);
         if (keyDocId === docId) {
           const lastUpdateAt = new Date(updatedAt);
           const diff = Date.now() - lastUpdateAt.getTime();
           if (diff > cacheTTLMillis) {
-            db.del(key).finally();
-            db.del(`${key}:doc_id`).finally();
-            db.del(`${key}:updatedAt`).finally();
+            storage.del(key).finally();
+            storage.del(`${key}:doc_id`).finally();
+            storage.del(`${key}:updatedAt`).finally();
             console.log('removed:', key);
           }
         }

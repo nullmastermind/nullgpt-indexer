@@ -1,6 +1,6 @@
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
-import { db } from '../constant';
+import { storage } from '../constant';
 import { summaryByStrategy } from './OpenAI';
 import Strategy from './Strategy';
 import { countTokens, createMd5 } from './common';
@@ -30,7 +30,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
     }
 
     const key = [this.summaryStrategyKey, createMd5(text)].join(':');
-    const cachedValue = await db.get(key);
+    const cachedValue = await storage.get(key);
 
     if (cachedValue) {
       return [cachedValue];
@@ -38,7 +38,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
 
     const summary = await summaryByStrategy(text, this.summaryStrategy);
 
-    await db.set(key, summary);
+    await storage.set(key, summary);
 
     return [summary];
   }
