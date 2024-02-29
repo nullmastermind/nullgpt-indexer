@@ -1,6 +1,6 @@
 import { CohereEmbeddings, CohereEmbeddingsParams } from 'langchain/embeddings/cohere';
 
-import { db } from '../constant';
+import { storage } from '../constant';
 import { createMd5 } from './common';
 
 class CachedCohereEmbeddings extends CohereEmbeddings {
@@ -21,10 +21,10 @@ class CachedCohereEmbeddings extends CohereEmbeddings {
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
     const key = createMd5([...texts, ':COHERE_EMBEDDINGS'].join(''));
-    const dbVal = await db.get(key);
+    const dbVal = await storage.get(key);
 
-    this.waitingProcesses.push(db.set(`${key}:updatedAt`, new Date()));
-    this.waitingProcesses.push(db.set(`${key}:doc_id`, this.docId));
+    this.waitingProcesses.push(storage.set(`${key}:updatedAt`, new Date()));
+    this.waitingProcesses.push(storage.set(`${key}:doc_id`, this.docId));
 
     if (dbVal !== undefined) {
       if (![undefined, null].includes(dbVal[0])) {
@@ -39,7 +39,7 @@ class CachedCohereEmbeddings extends CohereEmbeddings {
       throw { error: 'API error' };
     }
 
-    await db.set(key, result);
+    await storage.set(key, result);
 
     return result;
   }

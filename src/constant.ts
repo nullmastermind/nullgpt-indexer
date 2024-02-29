@@ -2,7 +2,7 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { FaissStore } from 'langchain/vectorstores/faiss';
 import path from 'path';
 
-import Db from './utility/db';
+import Storage from './utility/Storage';
 
 require('dotenv').config({
   path: require('path').join(process.cwd(), '.env'),
@@ -15,4 +15,5 @@ export const splitter: Record<string, RecursiveCharacterTextSplitter> = {};
 export const vectorStores: Record<string, FaissStore> = {};
 export type TEmbeddingsType = 'tensorflow' | 'openai';
 export const embeddingsType = (process.env.EMBEDDINGS || 'openai') as TEmbeddingsType;
-export const db = new Db('_db');
+export const storage = new Storage('DEFAULT');
+export const summaryStorage = new Storage('SUMMARY');

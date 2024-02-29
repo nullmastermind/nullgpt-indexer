@@ -6,7 +6,7 @@ import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, throttle, uniqueId } from 'lodash';
 import path from 'path';
 
-import { db, docsDir, indexSaveDir, vectorStores } from '../constant';
+import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
 import CachedCohereEmbeddings from '../utility/CachedCohereEmbeddings';
 import CachedOpenAIEmbeddings from '../utility/CachedOpenAIEmbeddings';
 import {
@@ -25,13 +25,18 @@ type IndexerQueueInput = {
   vectorStore: FaissStore;
   indexedHash: Record<string, boolean>;
   newIndexedHash: Record<string, boolean>;
+  strategy: 'code' | 'document';
 };
 
 const indexerQueue = new Queue<IndexerQueueInput>(
-  async ({ f, vectorStore, indexedHash, newIndexedHash }: IndexerQueueInput, cb) => {
+  async ({ f, vectorStore, indexedHash, newIndexedHash, strategy }: IndexerQueueInput, cb) => {
     try {
+      if (strategy === 'document' && !process.env.SUMMARY_MODEL_NAME?.length) {
+        return;
+      }
+
       const ext = path.extname(f);
-      const splitter = getSplitter(ext);
+      const splitter = getSplitter(ext, strategy);
       const loader = new TextLoader(f);
       const docs = (await loader.loadAndSplit(splitter)).filter((doc) => {
         return filterDocIndex(doc);
@@ -59,7 +64,7 @@ const indexerQueue = new Queue<IndexerQueueInput>(
                 .join('/'),
             ].join('');
 
-            doc.pageContent = `DOCUMENT NAME: ${docName}\n\n${doc.pageContent}`;
+            doc.pageContent = `${strategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${docName}\n\n${doc.pageContent}`;
 
             doc.metadata.source = '/home/fakeuser' + docName;
             doc.metadata['md5'] = md5;
@@ -108,10 +113,13 @@ const indexHandler = async (req: Request, res: Response) => {
   clearConsole();
   console.log(`Start training ${docId}...`);
 
-  const saveTo = path.join(indexSaveDir, docId);
-  const indexedHashFile = path.join(saveTo, 'indexedHash.json');
-  const tempVectorStoreId = uniqueId('VectorStore');
-  const vectorStore = await getVectorStore(tempVectorStoreId, docId, apiKey, true);
+  const docSaveTo = path.join(indexSaveDir, docId);
+  const codeSaveTo = path.join(indexSaveDir, docId + '+code');
+  const indexedHashFile = path.join(docSaveTo, 'indexedHash.json');
+  const docVectorStoreId = uniqueId('VectorStore');
+  const codeVectorStoreId = uniqueId('CodeVectorStore');
+  const docVectorStore = await getVectorStore(docVectorStoreId, docId, apiKey, true);
+  const codeVectorStore = await getVectorStore(codeVectorStoreId, docId, apiKey, true);
   const indexed = { current: 0 };
   let indexedHash: Record<string, boolean> = {};
   if (await pathExists(indexedHashFile)) {
@@ -120,63 +128,71 @@ const indexHandler = async (req: Request, res: Response) => {
   const newIndexedHash: Record<string, boolean> = {};
 
   await listFilesRecursively(indexDir, extensions, async (f) => {
-    const exec = () => {
+    const exec = (strategy: 'code' | 'document') => {
       return new Promise((rel) => {
         indexerQueue
           .push({
             f,
-            vectorStore,
+            vectorStore: {
+              code: codeVectorStore,
+              document: docVectorStore,
+            }[strategy],
             indexedHash,
             newIndexedHash,
+            strategy,
           })
           .on('finish', rel);
       });
     };
 
-    if (await exec()) {
-      console.log('indexed:', f);
-    }
+    await Promise.all([exec('document'), exec('code')]);
+
+    console.log('indexed:', f);
+
     indexed.current += 1;
   });
 
   console.log('Cleaning...');
 
   if (indexed.current > 0) {
-    await vectorStore.save(saveTo);
+    await docVectorStore.save(docSaveTo);
+    await codeVectorStore.save(codeSaveTo);
     await writeFile(indexedHashFile, JSON.stringify(indexedHash));
     await (
-      vectorStore.embeddings as CachedOpenAIEmbeddings | CachedCohereEmbeddings
+      docVectorStore.embeddings as CachedOpenAIEmbeddings | CachedCohereEmbeddings
     ).ensureAllDataSaved();
 
-    vectorStores[docId] = vectorStore;
-    delete vectorStores[tempVectorStoreId];
+    vectorStores[docId] = docVectorStore;
+    delete vectorStores[docVectorStoreId];
   }
 
-  await db.set(`${docId}:extensions`, extensions);
-  await db.set(`${docId}:indexAt`, new Date());
+  await storage.set(`${docId}:extensions`, extensions);
+  await storage.set(`${docId}:indexAt`, new Date());
 
   // remove unused keys
-  db.eachKey(async (key) => {
-    if (isMD5(key)) {
-      const updatedAt = await db.get(`${key}:updatedAt`);
-      if (updatedAt === undefined) {
-        db.del(key).finally();
-        console.log('removed:', key);
-      } else {
-        const keyDocId = await db.get(`${key}:doc_id`);
-        if (keyDocId === docId) {
-          const lastUpdateAt = new Date(updatedAt);
-          const diff = Date.now() - lastUpdateAt.getTime();
-          if (diff > cacheTTLMillis) {
-            db.del(key).finally();
-            db.del(`${key}:doc_id`).finally();
-            db.del(`${key}:updatedAt`).finally();
-            console.log('removed:', key);
+  storage
+    .eachKey(async (key) => {
+      if (isMD5(key)) {
+        const updatedAt = await storage.get(`${key}:updatedAt`);
+        if (updatedAt === undefined) {
+          storage.del(key).finally();
+          console.log('removed:', key);
+        } else {
+          const keyDocId = await storage.get(`${key}:doc_id`);
+          if (keyDocId === docId) {
+            const lastUpdateAt = new Date(updatedAt);
+            const diff = Date.now() - lastUpdateAt.getTime();
+            if (diff > cacheTTLMillis) {
+              storage.del(key).finally();
+              storage.del(`${key}:doc_id`).finally();
+              storage.del(`${key}:updatedAt`).finally();
+              console.log('removed:', key);
+            }
           }
         }
       }
-    }
-  }).finally();
+    })
+    .finally();
 
   console.log('Successfully indexed FaissStore');
 
