@@ -4,7 +4,7 @@ import { Document } from 'langchain/document';
 import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, map } from 'lodash';
 
-import { getVectorStore } from '../utility/common';
+import { getVectorStore, scoreNormalizer } from '../utility/common';
 
 const queryByVectorStore = async (
   req: Request,
@@ -15,11 +15,12 @@ const queryByVectorStore = async (
     query,
     k = 4,
     maxTokens = 3072,
-    maxScore = 0.55,
+    // maxScore = 0.55,
     includeAllIfKLessThanScore = 0.3,
     scoreChangeThreshold = 0.03,
     ignoreHashes = [],
   } = req.body;
+  const maxScore = 0.8;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
   const results = await vectorStore.similaritySearchWithScore(query, k + ignoredHashesSet.size);
   const data: [Document, number][] = [];
@@ -31,9 +32,16 @@ const queryByVectorStore = async (
     if (data.length >= k) return false;
 
     // I don't know why the score is greater than 1.0, like 1.2, 1.6, etc.
-    r[1] = Math.max(0.0, r[1] - 1.0);
+    // r[1] = Math.max(0.0, r[1] - 1.0);
+    // r[1] = 1.0 - r[1] / 2.0;
+    r[1] = scoreNormalizer(r[1]);
+
+    // console.log('score:', r[1]);
 
     if (r[1] > maxScore) return false;
+
+    // https://stackoverflow.com/a/76700607
+    // if (!(r[1] >= 0.6 && r[1] <= 1.2)) return false;
 
     if (lastScore.current === -1) {
       lastScore.current = r[1];

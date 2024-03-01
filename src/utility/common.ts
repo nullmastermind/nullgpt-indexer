@@ -337,3 +337,15 @@ export const countTokens = async (content: string) => {
 
   return encode(content).length;
 };
+
+export const scoreNormalizer = (score: number) => {
+  // return 1 - 1 / (1 + Math.exp(score));
+  score = 1.0 - score / Math.sqrt(2.0);
+
+  if (score < 0) {
+    return 1.0;
+  }
+
+  return score;
+  // return 1 - 1 / (1 + Math.exp(score));
+};
