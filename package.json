@@ -11,18 +11,21 @@
     "start:dev": "ts-node ./src/server.ts"
   },
   "dependencies": {
+    "@langchain/cohere": "^0.0.5",
+    "@langchain/community": "^0.0.34",
+    "@langchain/openai": "^0.0.15",
     "better-queue": "^3.8.12",
     "cohere-ai": "^6.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "faiss-node": "^0.2.1",
+    "faiss-node": "^0.5.1",
     "fast-glob": "^3.2.12",
     "fs-extra": "^11.1.1",
     "gpt-3-encoder": "^1.1.4",
     "gpt-tokenizer": "^2.1.2",
     "ignore": "^5.2.4",
-    "langchain": "^0.0.96",
+    "langchain": "^0.1.24",
     "level": "^8.0.0",
     "lodash": "^4.17.21",
     "openai": "^4.28.0"

@@ -1,3 +1,4 @@
+import { FaissStore } from '@langchain/community/vectorstores/faiss';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
 import fg from 'fast-glob';
@@ -5,14 +6,11 @@ import * as fs from 'fs-extra';
 import { pathExists } from 'fs-extra';
 import ignore, { Ignore } from 'ignore';
 import { Document } from 'langchain/document';
-import { Embeddings } from 'langchain/embeddings';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach } from 'lodash';
 import path from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
-import CachedCohereEmbeddings from './CachedCohereEmbeddings';
 import CachedOpenAIEmbeddings from './CachedOpenAIEmbeddings';
 import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
@@ -263,22 +261,15 @@ export const getVectorStore = async (
 ): Promise<FaissStore> => {
   if (!vectorStores[docId] || forceNew) {
     const saveDir = path.join(indexSaveDir, docId);
-    const embeddings = { current: undefined as any as Embeddings };
+    const embeddings = { current: undefined as any };
 
-    if (process.env.EMBEDDINGS === 'cohere-ai') {
-      embeddings.current = new CachedCohereEmbeddings(embeddingsDocId, {
-        apiKey: process.env.COHERE_API_KEY,
-        maxConcurrency: +(process.env.MAX_CONCURRENCY || '3'),
-        maxRetries: 10,
-      });
-    } else {
-      embeddings.current = new CachedOpenAIEmbeddings(embeddingsDocId, {
-        openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
-        maxConcurrency: +(process.env.MAX_CONCURRENCY || '5'),
-        maxRetries: 10,
-        modelName: process.env.EMBEDDING_MODEL_NAME || undefined,
-      });
-    }
+    embeddings.current = new CachedOpenAIEmbeddings(embeddingsDocId, {
+      openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
+      maxConcurrency: +(process.env.MAX_CONCURRENCY || '5'),
+      maxRetries: 10,
+      modelName: process.env.EMBEDDING_MODEL_NAME || undefined,
+      // dimensions: 1024,
+    });
 
     if (await pathExists(path.join(saveDir, 'docstore.json'))) {
       vectorStores[docId] = await FaissStore.load(

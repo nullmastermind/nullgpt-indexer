@@ -1,5 +1,4 @@
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-import { OpenAIEmbeddingsParams } from 'langchain/embeddings/openai';
+import { OpenAIEmbeddings, OpenAIEmbeddingsParams } from '@langchain/openai';
 
 import { storage } from '../constant';
 import { createMd5 } from './common';

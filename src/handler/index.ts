@@ -7,7 +7,6 @@ import { forEach, throttle, uniqueId } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
-import CachedCohereEmbeddings from '../utility/CachedCohereEmbeddings';
 import CachedOpenAIEmbeddings from '../utility/CachedOpenAIEmbeddings';
 import {
   createMd5,
@@ -158,9 +157,7 @@ const indexHandler = async (req: Request, res: Response) => {
     await docVectorStore.save(docSaveTo);
     await codeVectorStore.save(codeSaveTo);
     await writeFile(indexedHashFile, JSON.stringify(indexedHash));
-    await (
-      docVectorStore.embeddings as CachedOpenAIEmbeddings | CachedCohereEmbeddings
-    ).ensureAllDataSaved();
+    await (docVectorStore.embeddings as CachedOpenAIEmbeddings).ensureAllDataSaved();
 
     vectorStores[docId] = docVectorStore;
     delete vectorStores[docVectorStoreId];

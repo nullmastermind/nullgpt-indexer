@@ -12,8 +12,6 @@ const queryByVectorStore = async (
   strategy: 'document' | 'code',
 ) => {
   const {
-    doc_id: docId,
-    api_key: apiKey,
     query,
     k = 4,
     maxTokens = 3072,
@@ -30,7 +28,10 @@ const queryByVectorStore = async (
   const includedSources = new Set<string>();
 
   forEach(results, (r) => {
-    r[1] = 0.0; // This will fake the score of the result to handle the logic below, because "vectorStore" returns the wrong score.
+    if (data.length >= k) return false;
+
+    // I don't know why the score is greater than 1.0, like 1.2, 1.6, etc.
+    r[1] = Math.max(0.0, r[1] - 1.0);
 
     if (r[1] > maxScore) return false;
 
@@ -112,7 +113,10 @@ const queryHandler = async (req: Request, res: Response) => {
   ]);
 
   res.status(200).json({
-    data: [...docData.data, ...codeData.data],
+    data: [...docData.data, ...codeData.data].map((v) => {
+      v[1] = 0;
+      return v;
+    }),
     tokens: docData.tokens + codeData.tokens,
   });
 };
