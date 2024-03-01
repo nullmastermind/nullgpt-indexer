@@ -15,12 +15,11 @@ const queryByVectorStore = async (
     query,
     k = 4,
     maxTokens = 3072,
-    // maxScore = 0.55,
+    maxScore = 0.55,
     includeAllIfKLessThanScore = 0.3,
     scoreChangeThreshold = 0.03,
     ignoreHashes = [],
   } = req.body;
-  const maxScore = 0.8;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
   const results = await vectorStore.similaritySearchWithScore(query, k + ignoredHashesSet.size);
   const data: [Document, number][] = [];
