@@ -343,7 +343,7 @@ export const scoreNormalizer = (score: number) => {
   score = 1.0 - score / Math.sqrt(2.0);
 
   if (score < 0) {
-    return 1.0;
+    return 1.0 - score;
   }
 
   return score;
