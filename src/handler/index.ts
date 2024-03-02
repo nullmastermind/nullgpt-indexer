@@ -109,6 +109,8 @@ const indexHandler = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'The path does not exist.' });
   }
 
+  await storage.set(`${docId}:extensions`, extensions);
+
   clearConsole();
   console.log(`Start training ${docId}...`);
 
@@ -163,7 +165,6 @@ const indexHandler = async (req: Request, res: Response) => {
     delete vectorStores[docVectorStoreId];
   }
 
-  await storage.set(`${docId}:extensions`, extensions);
   await storage.set(`${docId}:indexAt`, new Date());
 
   // remove unused keys
