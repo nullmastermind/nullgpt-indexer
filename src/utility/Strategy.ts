@@ -6,7 +6,7 @@ const Strategy = {
 
 1. The shortened version also includes a list of the main tasks of this file, functions, variables, classes, classes with methods, imports, function interfaces, etc. (dependent on the programming language) used in the user's provided code.
 2. You should supplement documentation for complex functions and the functions used within them.
-3. Important: Ensure that the functions or components (if any) are listed with complete parameters or props.`,
+3. Important: Ensure that the functions or components (if any) are listed with complete parameters or props. Provider short usage in complex function.`,
     },
   ],
   document: [
