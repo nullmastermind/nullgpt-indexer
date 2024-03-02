@@ -349,3 +349,8 @@ export const scoreNormalizer = (score: number) => {
   return score;
   // return 1 - 1 / (1 + Math.exp(score));
 };
+
+// https://math.stackexchange.com/a/3116145
+export const scoreNormalizer2 = (x: number): number => {
+  return (2 / Math.PI) * Math.atan(x);
+};

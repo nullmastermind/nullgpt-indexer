@@ -4,7 +4,7 @@ import { Document } from 'langchain/document';
 import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, map } from 'lodash';
 
-import { getVectorStore, scoreNormalizer } from '../utility/common';
+import { getVectorStore, scoreNormalizer2 } from '../utility/common';
 
 const queryByVectorStore = async (
   req: Request,
@@ -33,7 +33,9 @@ const queryByVectorStore = async (
     // I don't know why the score is greater than 1.0, like 1.2, 1.6, etc.
     // r[1] = Math.max(0.0, r[1] - 1.0);
     // r[1] = 1.0 - r[1] / 2.0;
-    r[1] = scoreNormalizer(r[1]);
+    // console.log('score:', scoreNormalizer(r[1]), scoreNormalizer2(r[1]));
+
+    r[1] = scoreNormalizer2(r[1]);
 
     // console.log('score:', r[1]);
 
