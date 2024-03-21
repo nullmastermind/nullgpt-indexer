@@ -8,6 +8,7 @@ import ignore, { Ignore } from 'ignore';
 import { Document } from 'langchain/document';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
+import { execSync } from 'node:child_process';
 import path from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
@@ -15,29 +16,56 @@ import CachedOpenAIEmbeddings from './CachedOpenAIEmbeddings';
 import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
 
+function getGitFiles(cwd: string): Promise<string[]> {
+  return new Promise((resolve) => {
+    exec('git ls-files', { cwd }, (error, stdout) => {
+      if (error) {
+        console.log('Git is not in this folder:', cwd);
+        return resolve([]);
+      }
+
+      const files = stdout.split('\n').filter(Boolean);
+      resolve(files);
+    });
+  });
+}
+
 export async function listFilesRecursively(
   dir: string,
   fileExtensions: string[],
   cb: (f: string) => Promise<any>,
 ): Promise<void> {
-  const stream = fg.stream(
-    [...fileExtensions, '.alias'].map((ext) => `**/*${ext}`),
-    {
-      cwd: dir,
-      dot: false,
-      onlyFiles: true,
-    },
-  );
   const handlers = [];
   const ignores = await getIgnores(dir);
   const dirIgnoresMap: Record<string, Ignore[]> = {};
+  let stream: string[] = [];
 
-  for await (const entry of stream) {
+  try {
+    stream = await getGitFiles(dir);
+    const extSet = new Set(fileExtensions);
+    stream = stream.filter((f) => {
+      return extSet.has(path.extname(f));
+    });
+  } catch (e) {}
+
+  if (stream.length === 0) {
+    stream = await fg(
+      [...fileExtensions, '.alias'].map((ext) => `**/*${ext}`),
+      {
+        cwd: dir,
+        dot: false,
+        onlyFiles: true,
+      },
+    );
+  }
+
+  for (const entry of stream) {
     const fullPath = path.join(dir, entry as string);
     const dirname = path.dirname(fullPath);
 
     if (path.extname(fullPath) === '.alias') {
-      const aliasEntries = (await fs.readFile(fullPath, 'utf8'))
+      const aliasEntries = (await fs.readFile(fullPath))
+        .toString('utf-8')
         .split('\n')
         .map((v) => v.trim())
         .filter((v) => v.length);
