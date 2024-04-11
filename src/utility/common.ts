@@ -8,7 +8,6 @@ import ignore, { Ignore } from 'ignore';
 import { Document } from 'langchain/document';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
-import { execSync } from 'node:child_process';
 import path from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
@@ -262,8 +261,7 @@ export const getSplitter = (
       '.proto': { lang: 'proto', ...defaultChunkConfig.text },
       '.php': { lang: 'php', ...defaultChunkConfig.code },
       '.sol': { lang: 'sol', ...defaultChunkConfig.code },
-      '.swift': { lang: 'swift', ...defaultChunkConfig.code },
-      // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
+      '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
     };
 
     if (lang[ext]) {
@@ -295,8 +293,7 @@ export const getVectorStore = async (
       openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
       maxConcurrency: +(process.env.MAX_CONCURRENCY || '5'),
       maxRetries: 10,
-      modelName: process.env.EMBEDDING_MODEL_NAME || undefined,
-      // dimensions: 1024,
+      modelName: process.env.EMBEDDING_MODEL_NAME || undefined, // dimensions: 1024,
     });
 
     if (await pathExists(path.join(saveDir, 'docstore.json'))) {
