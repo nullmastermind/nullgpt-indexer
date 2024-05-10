@@ -117,18 +117,23 @@ const queryHandler = async (req: Request, res: Response) => {
   const codeVectorStore = await getVectorStore(docId + '+code', docId, apiKey);
   const docVectorStore = await getVectorStore(docId, docId, apiKey);
 
-  const queries: any[] = [
-    queryByVectorStore(req, docVectorStore, 'document'),
-    queryByVectorStore(req, codeVectorStore, 'code'),
-  ];
+  const queries: any[] = [];
 
   query.replace(/@`(.*?)`/g, (substring: any, args: any) => {
     const req1 = cloneDeep(req);
     req1.body.query = args;
-    queries.push(queryByVectorStore(req1, codeVectorStore, 'document'));
+    req1.body.k = Math.min(req1.body.k, 3);
+    queries.push(queryByVectorStore(req1, docVectorStore, 'document'));
     queries.push(queryByVectorStore(req1, codeVectorStore, 'code'));
     return substring;
   });
+
+  if (queries.length) {
+    req.body.k = Math.min(req.body.k, 3);
+  }
+
+  queries.push(queryByVectorStore(req, docVectorStore, 'document'));
+  queries.push(queryByVectorStore(req, codeVectorStore, 'code'));
 
   const queryResults = await Promise.all(queries);
   const resData: any[] = [];
