@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { encode } from 'gpt-3-encoder';
 import { Document } from 'langchain/document';
 import { FaissStore } from 'langchain/vectorstores/faiss';
-import { forEach, map } from 'lodash';
+import { cloneDeep, forEach, map } from 'lodash';
 
 import { getVectorStore, scoreNormalizer2 } from '../utility/common';
 
@@ -113,20 +113,51 @@ const queryByVectorStore = async (
 };
 
 const queryHandler = async (req: Request, res: Response) => {
-  const { doc_id: docId, api_key: apiKey } = req.body;
+  const { doc_id: docId, api_key: apiKey, query = '' } = req.body;
   const codeVectorStore = await getVectorStore(docId + '+code', docId, apiKey);
   const docVectorStore = await getVectorStore(docId, docId, apiKey);
-  const [docData, codeData] = await Promise.all([
+
+  const queries: any[] = [
     queryByVectorStore(req, docVectorStore, 'document'),
     queryByVectorStore(req, codeVectorStore, 'code'),
-  ]);
+  ];
+
+  query.replace(/@`(.*?)`/g, (substring: any, args: any) => {
+    const req1 = cloneDeep(req);
+    req1.body.query = args;
+    queries.push(queryByVectorStore(req1, codeVectorStore, 'document'));
+    queries.push(queryByVectorStore(req1, codeVectorStore, 'code'));
+    return substring;
+  });
+
+  const queryResults = await Promise.all(queries);
+  const resData: any[] = [];
+  const exitsKeys = new Set<string>([]);
+  const tokenResults: any[] = [];
+
+  forEach(queryResults, (r) => {
+    let hasItem = false;
+    forEach(r.data, (d) => {
+      const key = [d[0].metadata.hash, d[0].metadata.summary].join('/');
+      if (!exitsKeys.has(key)) {
+        resData.push(d);
+        hasItem = true;
+        exitsKeys.add(key);
+      }
+    });
+    if (hasItem) tokenResults.push(r);
+  });
 
   res.status(200).json({
-    data: [...docData.data, ...codeData.data].map((v) => {
+    data: resData.map((v) => {
       v[1] = 0;
       return v;
     }),
-    tokens: docData.tokens + codeData.tokens,
+    tokens: tokenResults
+      .map((v) => v.tokens)
+      .reduce((previousValue, currentValue) => {
+        return previousValue + currentValue;
+      }),
   });
 };
 
