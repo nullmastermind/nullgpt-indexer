@@ -122,7 +122,7 @@ const queryHandler = async (req: Request, res: Response) => {
   query.replace(/@`(.*?)`/g, (substring: any, args: any) => {
     const req1 = cloneDeep(req);
     req1.body.query = args;
-    // req1.body.k = Math.min(req1.body.k, 3);
+    req1.body.k = Math.min(req1.body.k, 3);
     queries.push(queryByVectorStore(req1, docVectorStore, 'document'));
     queries.push(queryByVectorStore(req1, codeVectorStore, 'code'));
     return substring;
