@@ -119,7 +119,7 @@ const queryHandler = async (req: Request, res: Response) => {
 
   const queries: any[] = [];
 
-  query.replace(/@`(.*?)`/g, (substring: any, args: any) => {
+  query.replace(/`@(.*?)`/g, (substring: any, args: any) => {
     const req1 = cloneDeep(req);
     req1.body.query = args;
     req1.body.k = Math.min(req1.body.k, 3);
