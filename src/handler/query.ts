@@ -153,16 +153,20 @@ const queryHandler = async (req: Request, res: Response) => {
     if (hasItem) tokenResults.push(r);
   });
 
+  const results = resData.map((v) => {
+    v[1] = 0;
+    return v;
+  });
+
+  results.sort((a, b) => {
+    return (a[0]?.metadata?.summary ? 0 : 1) - (b[0]?.metadata?.summary ? 0 : 1);
+  });
+
   res.status(200).json({
-    data: resData.map((v) => {
-      v[1] = 0;
-      return v;
-    }),
+    data: results,
     tokens: tokenResults
       .map((v) => v.tokens)
-      .reduce((previousValue, currentValue) => {
-        return previousValue + currentValue;
-      }),
+      .reduce((previousValue, currentValue) => previousValue + currentValue, 0),
   });
 };
 
