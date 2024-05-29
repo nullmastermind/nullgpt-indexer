@@ -118,7 +118,7 @@ export async function getIgnores(dir: string): Promise<[string[], Record<string,
   for await (const entry of stream) {
     const fullPath = path.join(dir, entry as string);
     const dirname = path.dirname(fullPath);
-    const gitignoreContent = await fs.readFile(fullPath, 'utf-8');
+    const gitignoreContent = (await fs.readFile(fullPath)).toString('utf-8');
     mapValue[dirname] = ignore().add(gitignoreContent);
     keys.push(dirname);
   }
@@ -363,17 +363,17 @@ export const countTokens = async (content: string) => {
   return encode(content).length;
 };
 
-export const scoreNormalizer = (score: number) => {
-  // return 1 - 1 / (1 + Math.exp(score));
-  score = 1.0 - score / Math.sqrt(2.0);
-
-  if (score < 0) {
-    return 1.0 - score;
-  }
-
-  return score;
-  // return 1 - 1 / (1 + Math.exp(score));
-};
+// export const scoreNormalizer = (score: number) => {
+//   // return 1 - 1 / (1 + Math.exp(score));
+//   score = 1.0 - score / Math.sqrt(2.0);
+//
+//   if (score < 0) {
+//     return 1.0 - score;
+//   }
+//
+//   return score;
+//   // return 1 - 1 / (1 + Math.exp(score));
+// };
 
 // https://math.stackexchange.com/a/3116145
 export const scoreNormalizer2 = (x: number): number => {
