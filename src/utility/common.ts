@@ -5,7 +5,9 @@ import fg from 'fast-glob';
 import * as fs from 'fs-extra';
 import { pathExists } from 'fs-extra';
 import ignore, { Ignore } from 'ignore';
+import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
+import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
@@ -193,11 +195,16 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   return true;
 };
 
+export const env = (key: string, defaultValue?: string): string | undefined => {
+  if (key in process.env) return process.env[key];
+  return defaultValue;
+};
+
 export const getSplitter = (
   ext: string,
   strategy: 'document' | 'code',
 ): RecursiveCharacterTextSplitter => {
-  if (process.env.SUMMARY_MODEL_NAME?.length > 0 && strategy === 'document') {
+  if (env('SUMMARY_MODEL_NAME')?.length > 0 && strategy === 'document') {
     let summaryStrategy = 'code';
 
     if (['.md', '.txt', '.mdx', '.html', '.htm', '.odt', '.xml', '.csv', '.rtf'].includes(ext)) {
@@ -293,10 +300,10 @@ export const getVectorStore = async (
     const embeddings = { current: undefined as any };
 
     embeddings.current = new CachedOpenAIEmbeddings(embeddingsDocId, {
-      openAIApiKey: apiKey || process.env.OPENAI_API_KEY,
-      maxConcurrency: +(process.env.MAX_CONCURRENCY || '5'),
+      openAIApiKey: apiKey || env('OPENAI_API_KEY'),
+      maxConcurrency: +env('MAX_CONCURRENCY', '5'),
       maxRetries: 10,
-      modelName: process.env.EMBEDDING_MODEL_NAME || undefined, // dimensions: 1024,
+      modelName: env('EMBEDDING_MODEL_NAME', 'text-embedding-3-small'), // dimensions: 1024,
     });
 
     if (await pathExists(path.join(saveDir, 'docstore.json'))) {
@@ -381,4 +388,18 @@ export const countTokens = async (content: string) => {
 // https://math.stackexchange.com/a/3116145
 export const scoreNormalizer2 = (x: number): number => {
   return (2 / Math.PI) * Math.atan(x);
+};
+
+export const getLoader = async (
+  filePath: string,
+  strategy: 'code' | 'document',
+): Promise<{
+  loader: BaseDocumentLoader;
+  split: boolean;
+}> => {
+  // const ext = path.extname(filePath);
+  return {
+    loader: new TextLoader(filePath),
+    split: true,
+  };
 };

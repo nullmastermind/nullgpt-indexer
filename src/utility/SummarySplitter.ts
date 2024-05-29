@@ -2,7 +2,7 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
 import { enqueueSummaryByStrategy } from './OpenAI';
 import Strategy from './Strategy';
-import { countTokens, createMd5 } from './common';
+import { countTokens, createMd5, env } from './common';
 
 export type SummaryStrategy = 'document' | 'code' | string;
 
@@ -19,7 +19,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
 
   async splitText(text: string): Promise<string[]> {
     const strategyTokens = await countTokens(JSON.stringify(Strategy[this.summaryStrategy]));
-    const maxTokens = +(process.env.SUMMARY_MAX_TOKENS || 16000) - strategyTokens;
+    const maxTokens = +env('SUMMARY_MAX_TOKENS', '16000') - strategyTokens;
     const currentTokens = await countTokens(text);
 
     if (currentTokens > maxTokens) {

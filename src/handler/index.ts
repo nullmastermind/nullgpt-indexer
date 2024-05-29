@@ -1,6 +1,7 @@
 import Queue from 'better-queue';
 import { Request, Response } from 'express';
 import { pathExists, readJson, writeFile } from 'fs-extra';
+import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, throttle, uniqueId } from 'lodash';
@@ -10,7 +11,9 @@ import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
 import CachedOpenAIEmbeddings from '../utility/CachedOpenAIEmbeddings';
 import {
   createMd5,
+  env,
   filterDocIndex,
+  getLoader,
   getSplitter,
   getVectorStore,
   isMD5,
@@ -30,14 +33,15 @@ type IndexerQueueInput = {
 const indexerQueue = new Queue<IndexerQueueInput>(
   async ({ f, vectorStore, indexedHash, newIndexedHash, strategy }: IndexerQueueInput, cb) => {
     try {
-      if (strategy === 'document' && !process.env.SUMMARY_MODEL_NAME?.length) {
+      if (strategy === 'document' && !env('SUMMARY_MODEL_NAME')) {
         return;
       }
 
       const ext = path.extname(f);
-      const splitter = getSplitter(ext, strategy);
-      const loader = new TextLoader(f);
-      const docs = (await loader.loadAndSplit(splitter)).filter((doc) => {
+      const { loader, split } = await getLoader(f, strategy);
+      const docs = (
+        split ? await loader.loadAndSplit(getSplitter(ext, strategy)) : await loader.load()
+      ).filter((doc) => {
         return filterDocIndex(doc);
       });
       const md5 = createMd5(docs.map((v) => v.pageContent).join(''));
@@ -47,28 +51,10 @@ const indexerQueue = new Queue<IndexerQueueInput>(
       await vectorStore.addDocuments(
         docs
           .map((doc) => {
-            // const relativePath = (path.relative(docsDir, doc.metadata.source) as string)
-            //   .split(path.sep)
-            //   .join('/')
-            //   .split('../')
-            //   .join('')
-            //   .split('./')
-            //   .join('');
-            // const tempDocName = relativePath.split('/');
-            // const docName = [
-            //   '/',
-            //   tempDocName
-            //     .filter((v, i) => tempDocName.length - i <= 3)
-            //     .filter((v) => !['.', '..'].includes(v))
-            //     .join('/'),
-            // ].join('');
             const docName = f.split(path.sep).join('/');
-
-            console.log('docName', docName);
 
             doc.pageContent = `${strategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${docName}\n\n${doc.pageContent}`;
 
-            // doc.metadata.source = '/home/fakeuser' + docName;
             doc.metadata.source = docName;
             doc.metadata['md5'] = md5;
             doc.metadata['hash'] = createMd5(doc.pageContent);
