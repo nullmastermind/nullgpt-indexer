@@ -47,24 +47,28 @@ const indexerQueue = new Queue<IndexerQueueInput>(
       await vectorStore.addDocuments(
         docs
           .map((doc) => {
-            const relativePath = (path.relative(docsDir, doc.metadata.source) as string)
-              .split(path.sep)
-              .join('/')
-              .split('../')
-              .join('')
-              .split('./')
-              .join('');
-            const tempDocName = relativePath.split('/');
-            const docName = [
-              '/',
-              tempDocName
-                .filter((v, i) => tempDocName.length - i <= 3)
-                .filter((v) => !['.', '..'].includes(v))
-                .join('/'),
-            ].join('');
+            // const relativePath = (path.relative(docsDir, doc.metadata.source) as string)
+            //   .split(path.sep)
+            //   .join('/')
+            //   .split('../')
+            //   .join('')
+            //   .split('./')
+            //   .join('');
+            // const tempDocName = relativePath.split('/');
+            // const docName = [
+            //   '/',
+            //   tempDocName
+            //     .filter((v, i) => tempDocName.length - i <= 3)
+            //     .filter((v) => !['.', '..'].includes(v))
+            //     .join('/'),
+            // ].join('');
+            const docName = f.split(path.sep).join('/');
+
+            console.log('docName', docName);
 
             doc.pageContent = `${strategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${docName}\n\n${doc.pageContent}`;
 
+            // doc.metadata.source = '/home/fakeuser' + docName;
             doc.metadata.source = '/home/fakeuser' + docName;
             doc.metadata['md5'] = md5;
             doc.metadata['hash'] = createMd5(doc.pageContent);

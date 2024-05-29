@@ -8,7 +8,7 @@ import ignore, { Ignore } from 'ignore';
 import { Document } from 'langchain/document';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
-import path from 'path';
+import path, { join } from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
 import CachedOpenAIEmbeddings from './CachedOpenAIEmbeddings';
@@ -16,11 +16,14 @@ import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
 
 function getGitFiles(cwd: string): Promise<string[]> {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve, reject) => {
+    if (!(await pathExists(join(cwd, '.git')))) {
+      return reject('Not a git root directory');
+    }
     exec('git ls-files', { cwd }, (error, stdout) => {
       if (error) {
         console.log('Git is not in this folder:', cwd);
-        return resolve([]);
+        return reject(error);
       }
 
       const files = stdout.split('\n').filter(Boolean);
@@ -45,9 +48,9 @@ export async function listFilesRecursively(
     stream = stream.filter((f) => {
       return extSet.has(path.extname(f));
     });
-  } catch (e) {}
+  } catch {}
 
-  if (stream.length === 0) {
+  if (!stream.length) {
     stream = await fg(
       [...fileExtensions, '.alias'].map((ext) => `**/*${ext}`),
       {
