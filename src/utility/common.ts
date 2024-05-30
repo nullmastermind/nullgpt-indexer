@@ -7,9 +7,12 @@ import { pathExists } from 'fs-extra';
 import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
-import { CSVLoader } from 'langchain/document_loaders/fs/csv';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import {
+  RecursiveCharacterTextSplitter,
+  TextSplitter,
+  TokenTextSplitter,
+} from 'langchain/text_splitter';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
 
@@ -180,18 +183,18 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   }
 
   // ignore if all lines contains special symbol only
-  const lines = doc.pageContent
-    .split('\n')
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0)
-    .filter((v) => {
-      v = v.split(' ').join('').split('\t').join('');
-      return !isOnlySpecial(v);
-    });
-  if (lines.length === 0) {
-    console.log('ignored special characters');
-    return false;
-  }
+  // const lines = doc.pageContent
+  //   .split('\n')
+  //   .map((v) => v.trim())
+  //   .filter((v) => v.length > 0)
+  //   .filter((v) => {
+  //     v = v.split(' ').join('').split('\t').join('');
+  //     return !isOnlySpecial(v);
+  //   });
+  // if (lines.length === 0) {
+  //   console.log('ignored special characters');
+  //   return false;
+  // }
 
   return true;
 };
@@ -201,10 +204,7 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
   return defaultValue;
 };
 
-export const getSplitter = (
-  ext: string,
-  strategy: 'document' | 'code',
-): RecursiveCharacterTextSplitter => {
+export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSplitter => {
   if (env('SUMMARY_MODEL_NAME')?.length > 0 && strategy === 'document') {
     let summaryStrategy = 'code';
 
@@ -234,11 +234,11 @@ export const getSplitter = (
     const defaultChunkConfig = {
       code: {
         chunkSize: 128 * 10,
-        chunkOverlap: 128 * 2,
+        chunkOverlap: 128,
       },
       text: {
         chunkSize: 128 * 20,
-        chunkOverlap: 128 * 4,
+        chunkOverlap: 128,
       },
     };
     const lang: Record<
@@ -261,8 +261,8 @@ export const getSplitter = (
       '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
       '.cs': { lang: 'java', ...defaultChunkConfig.code },
       '.py': { lang: 'python', ...defaultChunkConfig.code },
-      '.md': { lang: 'markdown', ...defaultChunkConfig.text },
-      '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
+      // '.md': { lang: 'markdown', ...defaultChunkConfig.text },
+      // '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
       '.html': { lang: 'html', ...defaultChunkConfig.text },
       '.java': { lang: 'java', ...defaultChunkConfig.code },
       '.rs': { lang: 'rust', ...defaultChunkConfig.code },
@@ -282,7 +282,8 @@ export const getSplitter = (
         chunkOverlap: lang[ext].chunkOverlap,
       });
     } else {
-      splitter[ext] = new RecursiveCharacterTextSplitter({
+      splitter[ext] = new TokenTextSplitter({
+        encodingName: 'gpt2',
         ...defaultChunkConfig.text,
       });
     }
@@ -401,7 +402,14 @@ export const getLoader = async (
 }> => {
   if (filePath.endsWith('.csv')) {
     return {
-      loader: new CSVLoader(filePath),
+      loader: new TextLoader(filePath),
+      split: true,
+    };
+  }
+
+  if (filePath.endsWith('.txt')) {
+    return {
+      loader: new TextLoader(filePath),
       split: true,
     };
   }
