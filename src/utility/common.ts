@@ -7,6 +7,7 @@ import { pathExists } from 'fs-extra';
 import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
+import { CSVLoader } from 'langchain/document_loaders/fs/csv';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
@@ -261,6 +262,7 @@ export const getSplitter = (
       '.cs': { lang: 'java', ...defaultChunkConfig.code },
       '.py': { lang: 'python', ...defaultChunkConfig.code },
       '.md': { lang: 'markdown', ...defaultChunkConfig.text },
+      '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
       '.html': { lang: 'html', ...defaultChunkConfig.text },
       '.java': { lang: 'java', ...defaultChunkConfig.code },
       '.rs': { lang: 'rust', ...defaultChunkConfig.code },
@@ -397,7 +399,13 @@ export const getLoader = async (
   loader: BaseDocumentLoader;
   split: boolean;
 }> => {
-  // const ext = path.extname(filePath);
+  if (filePath.endsWith('.csv')) {
+    return {
+      loader: new CSVLoader(filePath),
+      split: true,
+    };
+  }
+
   return {
     loader: new TextLoader(filePath),
     split: true,
