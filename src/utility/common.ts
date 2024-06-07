@@ -231,62 +231,69 @@ export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSpl
     //   'markdown', 'latex',
     //   'html',     'sol'
     // ]
-    const defaultChunkConfig = {
-      code: {
-        chunkSize: 128 * 10,
-        chunkOverlap: 128,
-      },
-      text: {
-        chunkSize: 128 * 20,
-        chunkOverlap: 128,
-      },
-    };
-    const lang: Record<
-      string,
-      {
-        lang: any;
-        chunkSize: number;
-        chunkOverlap: number;
-      }
-    > = {
-      '.js': { lang: 'js', ...defaultChunkConfig.code },
-      '.json': { lang: 'js', ...defaultChunkConfig.text },
-      '.jsx': { lang: 'js', ...defaultChunkConfig.code },
-      '.ts': { lang: 'js', ...defaultChunkConfig.code },
-      '.tsx': { lang: 'js', ...defaultChunkConfig.code },
-      '.go': { lang: 'go', ...defaultChunkConfig.code },
-      '.cpp': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.c': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.h': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.cs': { lang: 'java', ...defaultChunkConfig.code },
-      '.py': { lang: 'python', ...defaultChunkConfig.code },
-      // '.md': { lang: 'markdown', ...defaultChunkConfig.text },
-      // '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
-      '.html': { lang: 'html', ...defaultChunkConfig.text },
-      '.java': { lang: 'java', ...defaultChunkConfig.code },
-      '.rs': { lang: 'rust', ...defaultChunkConfig.code },
-      '.scala': { lang: 'scala', ...defaultChunkConfig.code },
-      '.tex': { lang: 'latex', ...defaultChunkConfig.text },
-      '.rb': { lang: 'ruby', ...defaultChunkConfig.code },
-      '.rst': { lang: 'rst', ...defaultChunkConfig.text },
-      '.proto': { lang: 'proto', ...defaultChunkConfig.text },
-      '.php': { lang: 'php', ...defaultChunkConfig.code },
-      '.sol': { lang: 'sol', ...defaultChunkConfig.code },
-      '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
-    };
+    // const defaultChunkConfig = {
+    //   code: {
+    //     chunkSize: 128 * 10,
+    //     chunkOverlap: 128,
+    //   },
+    //   text: {
+    //     chunkSize: 128 * 20,
+    //     chunkOverlap: 128,
+    //   },
+    // };
+    // const lang: Record<
+    //   string,
+    //   {
+    //     lang: any;
+    //     chunkSize: number;
+    //     chunkOverlap: number;
+    //   }
+    // > = {
+    //   '.js': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.json': { lang: 'js', ...defaultChunkConfig.text },
+    //   '.jsx': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.ts': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.tsx': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.go': { lang: 'go', ...defaultChunkConfig.code },
+    //   '.cpp': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.c': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.h': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.cs': { lang: 'java', ...defaultChunkConfig.code },
+    //   '.py': { lang: 'python', ...defaultChunkConfig.code },
+    //   // '.md': { lang: 'markdown', ...defaultChunkConfig.text },
+    //   // '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
+    //   '.html': { lang: 'html', ...defaultChunkConfig.text },
+    //   '.java': { lang: 'java', ...defaultChunkConfig.code },
+    //   '.rs': { lang: 'rust', ...defaultChunkConfig.code },
+    //   '.scala': { lang: 'scala', ...defaultChunkConfig.code },
+    //   '.tex': { lang: 'latex', ...defaultChunkConfig.text },
+    //   '.rb': { lang: 'ruby', ...defaultChunkConfig.code },
+    //   '.rst': { lang: 'rst', ...defaultChunkConfig.text },
+    //   '.proto': { lang: 'proto', ...defaultChunkConfig.text },
+    //   '.php': { lang: 'php', ...defaultChunkConfig.code },
+    //   '.sol': { lang: 'sol', ...defaultChunkConfig.code },
+    //   '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
+    // };
+    //
+    // if (lang[ext]) {
+    //   splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext].lang, {
+    //     chunkSize: lang[ext].chunkSize,
+    //     chunkOverlap: lang[ext].chunkOverlap,
+    //   });
+    // } else {
+    //   splitter[ext] = new TokenTextSplitter({
+    //     encodingName: 'gpt2',
+    //     ...defaultChunkConfig.text,
+    //   });
+    // }
 
-    if (lang[ext]) {
-      splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext].lang, {
-        chunkSize: lang[ext].chunkSize,
-        chunkOverlap: lang[ext].chunkOverlap,
-      });
-    } else {
-      splitter[ext] = new TokenTextSplitter({
-        encodingName: 'gpt2',
-        ...defaultChunkConfig.text,
-      });
-    }
+    // https://platform.openai.com/docs/assistants/tools/file-search/how-it-works
+    splitter[ext] = new TokenTextSplitter({
+      encodingName: 'gpt2',
+      chunkOverlap: 400,
+      chunkSize: 800,
+    });
   }
 
   return splitter[ext];
