@@ -13,11 +13,10 @@ const queryByVectorStore = async (
 ) => {
   const {
     query,
-    k = 4,
-    maxTokens = 3072,
-    maxScore = 0.55,
-    includeAllIfKLessThanScore = 0.3,
-    scoreChangeThreshold = 0.03,
+    k = {
+      document: 3,
+      code: 7,
+    }[strategy],
     ignoreHashes = [],
   } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
@@ -28,7 +27,7 @@ const queryByVectorStore = async (
   const includedSources = new Set<string>();
 
   forEach(results, (r) => {
-    if (data.length >= k) return false;
+    // if (data.length >= k) return false;
 
     // I don't know why the score is greater than 1.0, like 1.2, 1.6, etc.
     // r[1] = Math.max(0.0, r[1] - 1.0);
@@ -39,7 +38,7 @@ const queryByVectorStore = async (
 
     // console.log('score:', r[1]);
 
-    if (r[1] > maxScore) return false;
+    // if (r[1] > maxScore) return false;
 
     // https://stackoverflow.com/a/76700607
     // if (!(r[1] >= 0.6 && r[1] <= 1.2)) return false;
@@ -57,24 +56,29 @@ const queryByVectorStore = async (
 
     totalTokens.current += encoded.length;
 
-    if (totalTokens.current <= maxTokens) {
-      const canAddC1 = r[1] <= includeAllIfKLessThanScore;
-      const canAddC2 = r[1] - lastScore.current <= scoreChangeThreshold;
-      const canAddC3 = includedSources.has(r[0].metadata.source);
-      const canAdd = canAddC1 || canAddC2 || canAddC3;
+    // if (totalTokens.current <= maxTokens) {
+    //   // const canAddC1 = r[1] <= includeAllIfKLessThanScore;
+    //   const canAddC1 = false;
+    //   // const canAddC2 = r[1] - lastScore.current <= scoreChangeThreshold;
+    //   const canAddC2 = false;
+    //   const canAddC3 = includedSources.has(r[0].metadata.source);
+    //   const canAdd = canAddC1 || canAddC2 || canAddC3;
+    //
+    //   if (!canAdd) {
+    //     if (data.length >= k) {
+    //       return false;
+    //     }
+    //   }
+    //
+    //   includedSources.add(r[0].metadata.source);
+    //   data.push(r);
+    // } else {
+    //   totalTokens.current -= encoded.length;
+    //   return false;
+    // }
 
-      if (!canAdd) {
-        if (data.length >= k) {
-          return false;
-        }
-      }
-
-      includedSources.add(r[0].metadata.source);
-      data.push(r);
-    } else {
-      totalTokens.current -= encoded.length;
-      return false;
-    }
+    includedSources.add(r[0].metadata.source);
+    data.push(r);
   });
 
   data.sort((a, b) => {

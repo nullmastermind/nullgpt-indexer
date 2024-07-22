@@ -8,7 +8,9 @@ const Strategy = {
 2. Write documentation, use cases, call stack, code flow, and detailed explanation of those functions and related functions (don't miss analysis of function params).
 3. If the code is a UI library component like React, Vue, etc., or hooks, analyze all state, hooks, and what UI shows.
 
-I want you to reply only in Markdown format. Do not write explanations.`,
+I want you to reply only in Markdown format.
+
+Do not write explanations.`,
     },
   ],
   document: [

@@ -1,8 +1,6 @@
 import Queue from 'better-queue';
 import { Request, Response } from 'express';
 import { pathExists, readJson, writeFile } from 'fs-extra';
-import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
-import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { FaissStore } from 'langchain/vectorstores/faiss';
 import { forEach, throttle, uniqueId } from 'lodash';
 import path from 'path';

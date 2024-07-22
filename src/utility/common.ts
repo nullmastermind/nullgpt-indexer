@@ -8,7 +8,11 @@ import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import {
+  RecursiveCharacterTextSplitter,
+  TextSplitter,
+  TokenTextSplitter,
+} from 'langchain/text_splitter';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
 
@@ -179,18 +183,18 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   }
 
   // ignore if all lines contains special symbol only
-  const lines = doc.pageContent
-    .split('\n')
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0)
-    .filter((v) => {
-      v = v.split(' ').join('').split('\t').join('');
-      return !isOnlySpecial(v);
-    });
-  if (lines.length === 0) {
-    console.log('ignored special characters');
-    return false;
-  }
+  // const lines = doc.pageContent
+  //   .split('\n')
+  //   .map((v) => v.trim())
+  //   .filter((v) => v.length > 0)
+  //   .filter((v) => {
+  //     v = v.split(' ').join('').split('\t').join('');
+  //     return !isOnlySpecial(v);
+  //   });
+  // if (lines.length === 0) {
+  //   console.log('ignored special characters');
+  //   return false;
+  // }
 
   return true;
 };
@@ -200,10 +204,7 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
   return defaultValue;
 };
 
-export const getSplitter = (
-  ext: string,
-  strategy: 'document' | 'code',
-): RecursiveCharacterTextSplitter => {
+export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSplitter => {
   if (env('SUMMARY_MODEL_NAME')?.length > 0 && strategy === 'document') {
     let summaryStrategy = 'code';
 
@@ -230,60 +231,69 @@ export const getSplitter = (
     //   'markdown', 'latex',
     //   'html',     'sol'
     // ]
-    const defaultChunkConfig = {
-      code: {
-        chunkSize: 128 * 10,
-        chunkOverlap: 128 * 2,
-      },
-      text: {
-        chunkSize: 128 * 20,
-        chunkOverlap: 128 * 4,
-      },
-    };
-    const lang: Record<
-      string,
-      {
-        lang: any;
-        chunkSize: number;
-        chunkOverlap: number;
-      }
-    > = {
-      '.js': { lang: 'js', ...defaultChunkConfig.code },
-      '.json': { lang: 'js', ...defaultChunkConfig.text },
-      '.jsx': { lang: 'js', ...defaultChunkConfig.code },
-      '.ts': { lang: 'js', ...defaultChunkConfig.code },
-      '.tsx': { lang: 'js', ...defaultChunkConfig.code },
-      '.go': { lang: 'go', ...defaultChunkConfig.code },
-      '.cpp': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.c': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.h': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
-      '.cs': { lang: 'java', ...defaultChunkConfig.code },
-      '.py': { lang: 'python', ...defaultChunkConfig.code },
-      '.md': { lang: 'markdown', ...defaultChunkConfig.text },
-      '.html': { lang: 'html', ...defaultChunkConfig.text },
-      '.java': { lang: 'java', ...defaultChunkConfig.code },
-      '.rs': { lang: 'rust', ...defaultChunkConfig.code },
-      '.scala': { lang: 'scala', ...defaultChunkConfig.code },
-      '.tex': { lang: 'latex', ...defaultChunkConfig.text },
-      '.rb': { lang: 'ruby', ...defaultChunkConfig.code },
-      '.rst': { lang: 'rst', ...defaultChunkConfig.text },
-      '.proto': { lang: 'proto', ...defaultChunkConfig.text },
-      '.php': { lang: 'php', ...defaultChunkConfig.code },
-      '.sol': { lang: 'sol', ...defaultChunkConfig.code },
-      '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
-    };
+    // const defaultChunkConfig = {
+    //   code: {
+    //     chunkSize: 128 * 10,
+    //     chunkOverlap: 128,
+    //   },
+    //   text: {
+    //     chunkSize: 128 * 20,
+    //     chunkOverlap: 128,
+    //   },
+    // };
+    // const lang: Record<
+    //   string,
+    //   {
+    //     lang: any;
+    //     chunkSize: number;
+    //     chunkOverlap: number;
+    //   }
+    // > = {
+    //   '.js': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.json': { lang: 'js', ...defaultChunkConfig.text },
+    //   '.jsx': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.ts': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.tsx': { lang: 'js', ...defaultChunkConfig.code },
+    //   '.go': { lang: 'go', ...defaultChunkConfig.code },
+    //   '.cpp': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.c': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.h': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
+    //   '.cs': { lang: 'java', ...defaultChunkConfig.code },
+    //   '.py': { lang: 'python', ...defaultChunkConfig.code },
+    //   // '.md': { lang: 'markdown', ...defaultChunkConfig.text },
+    //   // '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
+    //   '.html': { lang: 'html', ...defaultChunkConfig.text },
+    //   '.java': { lang: 'java', ...defaultChunkConfig.code },
+    //   '.rs': { lang: 'rust', ...defaultChunkConfig.code },
+    //   '.scala': { lang: 'scala', ...defaultChunkConfig.code },
+    //   '.tex': { lang: 'latex', ...defaultChunkConfig.text },
+    //   '.rb': { lang: 'ruby', ...defaultChunkConfig.code },
+    //   '.rst': { lang: 'rst', ...defaultChunkConfig.text },
+    //   '.proto': { lang: 'proto', ...defaultChunkConfig.text },
+    //   '.php': { lang: 'php', ...defaultChunkConfig.code },
+    //   '.sol': { lang: 'sol', ...defaultChunkConfig.code },
+    //   '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
+    // };
+    //
+    // if (lang[ext]) {
+    //   splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext].lang, {
+    //     chunkSize: lang[ext].chunkSize,
+    //     chunkOverlap: lang[ext].chunkOverlap,
+    //   });
+    // } else {
+    //   splitter[ext] = new TokenTextSplitter({
+    //     encodingName: 'gpt2',
+    //     ...defaultChunkConfig.text,
+    //   });
+    // }
 
-    if (lang[ext]) {
-      splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext].lang, {
-        chunkSize: lang[ext].chunkSize,
-        chunkOverlap: lang[ext].chunkOverlap,
-      });
-    } else {
-      splitter[ext] = new RecursiveCharacterTextSplitter({
-        ...defaultChunkConfig.text,
-      });
-    }
+    // https://platform.openai.com/docs/assistants/tools/file-search/how-it-works
+    splitter[ext] = new TokenTextSplitter({
+      encodingName: 'gpt2',
+      chunkOverlap: 400,
+      chunkSize: 800,
+    });
   }
 
   return splitter[ext];
@@ -397,7 +407,20 @@ export const getLoader = async (
   loader: BaseDocumentLoader;
   split: boolean;
 }> => {
-  // const ext = path.extname(filePath);
+  if (filePath.endsWith('.csv')) {
+    return {
+      loader: new TextLoader(filePath),
+      split: true,
+    };
+  }
+
+  if (filePath.endsWith('.txt')) {
+    return {
+      loader: new TextLoader(filePath),
+      split: true,
+    };
+  }
+
   return {
     loader: new TextLoader(filePath),
     split: true,

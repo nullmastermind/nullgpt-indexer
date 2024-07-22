@@ -1,3 +1,7 @@
+# I'm working on a better version of this project, But I moved to Python for some features that could work.
+
+This project still working until the new project is completed.
+
 # ChatGPT Web
 
 This repository contains a section dedicated to providing a method for communication using confidential documentation. Main repository: https://github.com/nullmastermind/chatgpt-web
