@@ -45,7 +45,7 @@ const summaryByStrategy = async (
       content,
     },
   ];
-  const model = process.env.SUMMARY_MODEL_NAME || 'gpt-3.5-turbo';
+  const model = process.env.SUMMARY_MODEL_NAME || 'gpt-4o-mini';
   const key = [createMd5(JSON.stringify(messages)), model].join(':');
   const cached = await summaryStorage.get(key);
 
