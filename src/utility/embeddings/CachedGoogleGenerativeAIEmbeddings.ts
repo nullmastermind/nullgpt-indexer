@@ -44,6 +44,7 @@ class CachedGoogleGenerativeAIEmbeddings extends GoogleGenerativeAIEmbeddings {
       {
         retries: 10,
         delay: 10000,
+        timeout: 'INFINITELY',
       },
     );
 
