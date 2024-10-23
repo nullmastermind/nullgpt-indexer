@@ -49,9 +49,9 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
         const splitter = getSplitter(fileExtension);
         const chunks = await splitter.splitText((await readFile(filePath)).toString('utf-8'));
 
-        console.log('------------------------------------');
-        console.log(chunks[0]);
-        console.log('------------------------------------');
+        // console.log('------------------------------------');
+        // console.log(chunks[0]);
+        // console.log('------------------------------------');
 
         documents = await splitter.createDocuments(chunks);
       } else {
