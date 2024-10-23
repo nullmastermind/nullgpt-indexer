@@ -17,6 +17,7 @@
     "@langchain/core": "^0.3.13",
     "@langchain/google-genai": "^0.1.0",
     "@langchain/openai": "^0.3.11",
+    "axios": "^1.7.7",
     "better-queue": "^3.8.12",
     "cohere-ai": "^6.2.2",
     "cors": "^2.8.5",
