@@ -5,39 +5,37 @@ import { storage } from '../../constant';
 import { createMd5 } from '../common';
 
 class CachedGoogleGenerativeAIEmbeddings extends GoogleGenerativeAIEmbeddings {
-  private readonly waitingProcesses: any[];
   private readonly docId: string;
 
   constructor(docId: string, fields?: GoogleGenerativeAIEmbeddingsParams) {
     super(fields);
-    this.waitingProcesses = [];
     this.docId = docId;
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const cacheKey = [this.modelName, createMd5(texts.join(''))].join('_');
+    const cacheKey = createMd5([texts, this.modelName]);
     const cachedEmbeddings = await storage.get(cacheKey);
 
-    this.waitingProcesses.push(storage.set(`${cacheKey}:updatedAt`, new Date()));
-    this.waitingProcesses.push(storage.set(`${cacheKey}:doc_id`, this.docId));
+    await Promise.all([
+      storage.set(`${cacheKey}:updatedAt`, new Date()),
+      storage.set(`${cacheKey}:doc_id`, this.docId),
+    ]);
 
     if (cachedEmbeddings !== undefined) {
       return cachedEmbeddings;
     }
 
-    const embeddings = await super.embedDocuments(texts);
+    if (!texts.length) {
+      throw new Error('Cannot embed empty text array');
+    }
 
-    console.log('embeddings', embeddings, texts);
+    const embeddings = await super.embedDocuments(texts);
 
     if (!(Array.isArray(embeddings) && embeddings.length === 0)) {
       await storage.set(cacheKey, embeddings);
     }
 
     return embeddings;
-  }
-
-  async ensureAllDataSaved() {
-    await Promise.all(this.waitingProcesses);
   }
 }
 
