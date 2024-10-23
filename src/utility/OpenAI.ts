@@ -7,8 +7,8 @@ import { SummaryStrategy } from './SummarySplitter';
 import { createMd5, env } from './common';
 
 const limiter = new RateLimiter({
-  interval: 'minute',
-  tokensPerInterval: +(process.env.CONTEXTUAL_RATE_LIMIT_PER_MINUTE || '300'),
+  interval: 'second',
+  tokensPerInterval: +(process.env.CONTEXTUAL_RATE_LIMIT_PER_SECOND || '10'),
 });
 
 export const openai = new OpenAI({
