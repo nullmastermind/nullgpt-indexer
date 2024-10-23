@@ -314,7 +314,7 @@ export const getSplitter = (ext: string): TextSplitter => {
   if (!splitter[ext]) {
     // https://platform.openai.com/docs/assistants/tools/file-search/how-it-works
     splitter[ext] = new TokenTextSplitter({
-      encodingName: 'gpt2',
+      encodingName: 'cl100k_base',
       chunkOverlap: 400,
       chunkSize: 800,
     });
