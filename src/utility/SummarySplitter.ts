@@ -19,7 +19,8 @@ class SummarySplitter {
     metadatas?: Record<string, any>[],
     chunkHeaderOptions?: any,
   ) {
-    return this.splitter.createDocuments(texts, metadatas, chunkHeaderOptions);
+    if (!this.splitter) return [];
+    return this.splitter?.createDocuments(texts, metadatas, chunkHeaderOptions);
   }
 
   async splitText(text: string): Promise<string[]> {
