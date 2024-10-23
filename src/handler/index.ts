@@ -1,12 +1,12 @@
 import { LanceDB } from '@langchain/community/vectorstores/lancedb';
+import { Document } from '@langchain/core/documents';
 import Queue from 'better-queue';
 import { Request, Response } from 'express';
-import { pathExists, readJson, writeFile } from 'fs-extra';
+import { pathExists, readFile, readJson, writeFile } from 'fs-extra';
 import { forEach, throttle } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
-import CachedEmbeddings from '../utility/embeddings/CachedEmbeddings';
 import {
   createMd5,
   env,
@@ -18,6 +18,7 @@ import {
   listFilesRecursively,
   non,
 } from '../utility/common';
+import CachedEmbeddings from '../utility/embeddings/CachedEmbeddings';
 
 // Cache TTL set to 7 days in milliseconds
 const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000; // 7 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
@@ -48,11 +49,16 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
 
       const fileExtension = path.extname(filePath);
       const { loader, split } = await getLoader(filePath, processingStrategy);
-      const documents = (
-        split
-          ? await loader.loadAndSplit(getSplitter(fileExtension, processingStrategy))
-          : await loader.load()
-      ).filter((document) => {
+      let documents: Document[];
+      if (split) {
+        const splitter = getSplitter(fileExtension);
+        const chunks = await splitter.splitText((await readFile(filePath)).toString('utf-8'));
+
+        documents = await splitter.createDocuments(chunks);
+      } else {
+        documents = await loader.load();
+      }
+      documents = documents.filter((document: Document) => {
         return filterDocIndex(document);
       });
       const contentHash = createMd5(documents.map((doc) => doc.pageContent));
@@ -64,7 +70,8 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
           .map((document) => {
             const documentPath = filePath.split(path.sep).join('/');
 
-            document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
+            // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
+            document.pageContent = `DOCUMENT NAME: ${documentPath}\n\n${document.pageContent}`;
 
             document.metadata.source = documentPath;
             document.metadata['md5'] = contentHash;
@@ -97,10 +104,6 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
   },
 );
 
-const clearConsole = throttle(() => {
-  console.clear();
-}, 10000);
-
 const indexHandler = async (req: Request, res: Response) => {
   const { doc_id: documentId, extensions: allowedExtensions } = req.body;
   const documentDirectory = path.join(docsDir, documentId);
@@ -111,8 +114,6 @@ const indexHandler = async (req: Request, res: Response) => {
   }
 
   await storage.set(`${documentId}:extensions`, allowedExtensions);
-
-  clearConsole();
 
   console.log(`Starting code indexing and embedding generation for document ID: ${documentId}`);
 
