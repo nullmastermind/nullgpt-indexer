@@ -26,6 +26,8 @@ class SummarySplitter {
     // Get total tokens in text
     const textTokens = await countTokens(text);
 
+    if (textTokens === 0) return [];
+
     // Constants for token size constraints
     const MIN_TOKENS = +env('CHUNK_MIN_TOKENS', '150');
     const MAX_TOKENS = +env('CHUNK_MAX_TOKENS', '800');
