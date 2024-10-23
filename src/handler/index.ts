@@ -21,7 +21,7 @@ import {
 import CachedEmbeddings from '../utility/embeddings/CachedEmbeddings';
 
 // Cache TTL set to 7 days in milliseconds
-const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000; // 7 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
+const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000;
 
 type IndexerQueueInput = {
   filePath: string;
