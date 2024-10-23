@@ -71,7 +71,7 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       await vectorStore.addDocuments(
         documents
           .map((document) => {
-            const documentPath = filePath.split(path.sep).join('/');
+            const documentPath = filePath.split('/').join(path.sep);
 
             // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
             document.pageContent = `File Location: ${documentPath}
