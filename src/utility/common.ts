@@ -11,7 +11,6 @@ import { Document } from 'langchain/document';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
-import { connect } from 'vectordb';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
 import Strategy from './Strategy';
