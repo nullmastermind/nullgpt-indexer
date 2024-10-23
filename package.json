@@ -11,9 +11,11 @@
     "start:dev": "bun ./src/server.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@langchain/cohere": "^0.0.5",
     "@langchain/community": "^0.3.8",
     "@langchain/core": "^0.3.13",
+    "@langchain/google-genai": "^0.1.0",
     "@langchain/openai": "^0.3.11",
     "better-queue": "^3.8.12",
     "cohere-ai": "^6.2.2",

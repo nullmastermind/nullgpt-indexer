@@ -14,9 +14,10 @@ import path, { join } from 'path';
 import { connect } from 'vectordb';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
-import CachedEmbeddings from './CachedEmbeddings';
 import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
+import CachedEmbeddings from './embeddings/CachedEmbeddings';
+import CachedGoogleGenerativeAIEmbeddings from './embeddings/CachedGoogleGenerativeAIEmbeddings';
 
 function getGitFiles(cwd: string): Promise<string[]> {
   return new Promise(async (resolve, reject) => {
@@ -208,12 +209,98 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
   return defaultValue;
 };
 
-export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSplitter => {
-  if (env('SUMMARY_MODEL_NAME')?.length > 0 && strategy === 'document') {
-    let summaryStrategy = 'code';
+export const getSplitter = (ext: string): TextSplitter => {
+  if (env('SUMMARY_MODEL_NAME')?.length > 0) {
+    let summaryStrategy = 'document';
 
-    if (['.md', '.txt', '.mdx', '.html', '.htm', '.odt', '.xml', '.csv', '.rtf'].includes(ext)) {
-      summaryStrategy = 'document';
+    if (
+      [
+        '.js',
+        '.jsx',
+        '.ts',
+        '.tsx',
+        '.py',
+        '.java',
+        '.cpp',
+        '.c',
+        '.cs',
+        '.go',
+        '.rb',
+        '.php',
+        '.swift',
+        '.rs',
+        '.kt',
+        '.scala',
+        '.pl',
+        '.sh',
+        '.ps1',
+        '.bat',
+        '.cmd',
+        '.vb',
+        '.fs',
+        '.hs',
+        '.lua',
+        '.r',
+        '.m',
+        '.mm',
+        '.f90',
+        '.f95',
+        '.f03',
+        '.f08',
+        '.ada',
+        '.pas',
+        '.d',
+        '.erl',
+        '.ex',
+        '.exs',
+        '.elm',
+        '.clj',
+        '.coffee',
+        '.groovy',
+        '.jl',
+        '.ml',
+        '.nim',
+        '.rkt',
+        '.v',
+        '.zig',
+        '.au3',
+        '.sql',
+        '.yaml',
+        '.yml',
+        '.json',
+        '.xml',
+        '.html',
+        '.css',
+        '.scss',
+        '.sass',
+        '.less',
+        '.vue',
+        '.svelte',
+        '.dart',
+        '.gradle',
+        '.tf',
+        '.tfvars',
+        '.hcl',
+        '.dockerfile',
+        '.sol',
+        '.wasm',
+        '.wat',
+        '.asm',
+        '.s',
+        '.nasm',
+        '.mips',
+        '.arm',
+        '.cmake',
+        '.make',
+        '.toml',
+        '.ini',
+        '.cfg',
+        '.conf',
+        '.properties',
+        '.env',
+      ].includes(ext)
+    ) {
+      summaryStrategy = 'code';
     }
 
     // Strategy for special file extensions
@@ -225,73 +312,6 @@ export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSpl
   }
 
   if (!splitter[ext]) {
-    // [
-    //   'cpp',      'go',
-    //   'java',     'js',
-    //   'php',      'proto',
-    //   'python',   'rst',
-    //   'ruby',     'rust',
-    //   'scala',    'swift',
-    //   'markdown', 'latex',
-    //   'html',     'sol'
-    // ]
-    // const defaultChunkConfig = {
-    //   code: {
-    //     chunkSize: 128 * 10,
-    //     chunkOverlap: 128,
-    //   },
-    //   text: {
-    //     chunkSize: 128 * 20,
-    //     chunkOverlap: 128,
-    //   },
-    // };
-    // const lang: Record<
-    //   string,
-    //   {
-    //     lang: any;
-    //     chunkSize: number;
-    //     chunkOverlap: number;
-    //   }
-    // > = {
-    //   '.js': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.json': { lang: 'js', ...defaultChunkConfig.text },
-    //   '.jsx': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.ts': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.tsx': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.go': { lang: 'go', ...defaultChunkConfig.code },
-    //   '.cpp': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.c': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.h': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.cs': { lang: 'java', ...defaultChunkConfig.code },
-    //   '.py': { lang: 'python', ...defaultChunkConfig.code },
-    //   // '.md': { lang: 'markdown', ...defaultChunkConfig.text },
-    //   // '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
-    //   '.html': { lang: 'html', ...defaultChunkConfig.text },
-    //   '.java': { lang: 'java', ...defaultChunkConfig.code },
-    //   '.rs': { lang: 'rust', ...defaultChunkConfig.code },
-    //   '.scala': { lang: 'scala', ...defaultChunkConfig.code },
-    //   '.tex': { lang: 'latex', ...defaultChunkConfig.text },
-    //   '.rb': { lang: 'ruby', ...defaultChunkConfig.code },
-    //   '.rst': { lang: 'rst', ...defaultChunkConfig.text },
-    //   '.proto': { lang: 'proto', ...defaultChunkConfig.text },
-    //   '.php': { lang: 'php', ...defaultChunkConfig.code },
-    //   '.sol': { lang: 'sol', ...defaultChunkConfig.code },
-    //   '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
-    // };
-    //
-    // if (lang[ext]) {
-    //   splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext].lang, {
-    //     chunkSize: lang[ext].chunkSize,
-    //     chunkOverlap: lang[ext].chunkOverlap,
-    //   });
-    // } else {
-    //   splitter[ext] = new TokenTextSplitter({
-    //     encodingName: 'gpt2',
-    //     ...defaultChunkConfig.text,
-    //   });
-    // }
-
     // https://platform.openai.com/docs/assistants/tools/file-search/how-it-works
     splitter[ext] = new TokenTextSplitter({
       encodingName: 'gpt2',
@@ -313,12 +333,21 @@ export const getVectorStore = async (
     const saveDir = path.join(indexSaveDir, docId);
     const embeddings = { current: undefined as any };
 
-    embeddings.current = new CachedEmbeddings(embeddingsDocId, {
-      openAIApiKey: apiKey || env('OPENAI_API_KEY'),
-      maxConcurrency: +env('MAX_CONCURRENCY', '5'),
-      maxRetries: +env('MAX_RETRIES', '10'),
-      modelName: env('EMBEDDING_MODEL', 'text-embedding-3-small'), // dimensions: 1024,
-    });
+    if (env('EMBEDDINGS') === 'google') {
+      embeddings.current = new CachedGoogleGenerativeAIEmbeddings(embeddingsDocId, {
+        apiKey: env('GOOGLE_API_KEY'),
+        // maxConcurrency: +env('MAX_CONCURRENCY', '5'),
+        maxRetries: +env('MAX_RETRIES', '10'),
+        model: env('EMBEDDING_MODEL', 'text-embedding-004'), // dimensions: 768,
+      });
+    } else {
+      embeddings.current = new CachedEmbeddings(embeddingsDocId, {
+        openAIApiKey: apiKey || env('OPENAI_API_KEY'),
+        // maxConcurrency: +env('MAX_CONCURRENCY', '5'),
+        maxRetries: +env('MAX_RETRIES', '10'),
+        model: env('EMBEDDING_MODEL', 'text-embedding-3-small'), // dimensions: 1024,
+      });
+    }
 
     const db = await connect(saveDir);
     if (!(await db.tableNames()).includes('vectors')) {
@@ -341,7 +370,8 @@ export async function isDirectory(path: string): Promise<boolean> {
   }
 }
 
-export function createMd5(content: string): string {
+export function createMd5(content: any): string {
+  content = JSON.stringify(content);
   return createHash('md5').update(content).digest('hex');
 }
 
@@ -406,19 +436,19 @@ export const getLoader = async (
   loader: BaseDocumentLoader;
   split: boolean;
 }> => {
-  if (filePath.endsWith('.csv')) {
-    return {
-      loader: new TextLoader(filePath),
-      split: true,
-    };
-  }
-
-  if (filePath.endsWith('.txt')) {
-    return {
-      loader: new TextLoader(filePath),
-      split: true,
-    };
-  }
+  // if (filePath.endsWith('.csv')) {
+  //   return {
+  //     loader: new TextLoader(filePath),
+  //     split: true,
+  //   };
+  // }
+  //
+  // if (filePath.endsWith('.txt')) {
+  //   return {
+  //     loader: new TextLoader(filePath),
+  //     split: true,
+  //   };
+  // }
 
   return {
     loader: new TextLoader(filePath),

@@ -6,7 +6,7 @@ import { forEach, throttle } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
-import CachedEmbeddings from '../utility/CachedEmbeddings';
+import CachedEmbeddings from '../utility/embeddings/CachedEmbeddings';
 import {
   createMd5,
   env,
@@ -23,60 +23,71 @@ import {
 const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000; // 7 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
 
 type IndexerQueueInput = {
-  f: string;
+  filePath: string;
   vectorStore: LanceDB;
-  indexedHash: Record<string, boolean>;
-  newIndexedHash: Record<string, boolean>;
-  strategy: 'code' | 'document';
+  processedHashes: Record<string, boolean>;
+  newlyProcessedHashes: Record<string, boolean>;
+  processingStrategy: 'code' | 'document';
 };
 
-const indexerQueue = new Queue<IndexerQueueInput>(
-  async ({ f, vectorStore, indexedHash, newIndexedHash, strategy }: IndexerQueueInput, cb) => {
+const documentProcessingQueue = new Queue<IndexerQueueInput>(
+  async (
+    {
+      filePath,
+      vectorStore,
+      processedHashes,
+      newlyProcessedHashes,
+      processingStrategy,
+    }: IndexerQueueInput,
+    callback,
+  ) => {
     try {
-      if (strategy === 'document' && !env('SUMMARY_MODEL_NAME')) {
+      if (processingStrategy === 'document' && !env('SUMMARY_MODEL_NAME')) {
         return;
       }
 
-      const ext = path.extname(f);
-      const { loader, split } = await getLoader(f, strategy);
-      const docs = (
-        split ? await loader.loadAndSplit(getSplitter(ext, strategy)) : await loader.load()
-      ).filter((doc) => {
-        return filterDocIndex(doc);
+      const fileExtension = path.extname(filePath);
+      const { loader, split } = await getLoader(filePath, processingStrategy);
+      const documents = (
+        split
+          ? await loader.loadAndSplit(getSplitter(fileExtension, processingStrategy))
+          : await loader.load()
+      ).filter((document) => {
+        return filterDocIndex(document);
       });
-      const md5 = createMd5(docs.map((v) => v.pageContent).join(''));
-      const tempIndexedHash: Record<string, boolean> = {};
-      const isNewIndex = !indexedHash[md5];
+      const contentHash = createMd5(documents.map((doc) => doc.pageContent));
+      const temporaryProcessedHashes: Record<string, boolean> = {};
+      const isNewDocument = !processedHashes[contentHash];
 
       await vectorStore.addDocuments(
-        docs
-          .map((doc) => {
-            const docName = f.split(path.sep).join('/');
+        documents
+          .map((document) => {
+            const documentPath = filePath.split(path.sep).join('/');
 
-            doc.pageContent = `${strategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${docName}\n\n${doc.pageContent}`;
+            document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
 
-            doc.metadata.source = docName;
-            doc.metadata['md5'] = md5;
-            doc.metadata['hash'] = createMd5(doc.pageContent);
+            document.metadata.source = documentPath;
+            document.metadata['md5'] = contentHash;
+            document.metadata['hash'] = createMd5(document.pageContent);
 
-            return doc;
+            return document;
           })
-          .map((doc) => {
-            tempIndexedHash[doc.metadata['hash']] = true;
-            return doc;
+          .map((document) => {
+            temporaryProcessedHashes[document.metadata['hash']] = true;
+            return document;
           }),
       );
 
-      indexedHash[md5] = true;
-      newIndexedHash[md5] = true;
-      forEach(tempIndexedHash, (value, key) => {
-        indexedHash[key] = true;
-        newIndexedHash[key] = true;
+      processedHashes[contentHash] = true;
+      newlyProcessedHashes[contentHash] = true;
+      forEach(temporaryProcessedHashes, (value, key) => {
+        processedHashes[key] = true;
+        newlyProcessedHashes[key] = true;
       });
 
-      cb(null, isNewIndex);
-    } catch (e) {
-      cb(e);
+      callback(null, isNewDocument);
+    } catch (error) {
+      callback(error);
     }
   },
   {
@@ -118,13 +129,13 @@ const indexHandler = async (req: Request, res: Response) => {
   await listFilesRecursively(documentDirectory, allowedExtensions, async (filePath) => {
     const processFile = (processingStrategy: 'code' | 'document') => {
       return new Promise((resolve) => {
-        indexerQueue
+        documentProcessingQueue
           .push({
-            f: filePath,
-            vectorStore: vectorStore,
-            indexedHash: processedHashes,
-            newIndexedHash: newlyProcessedHashes,
-            strategy: processingStrategy,
+            filePath,
+            vectorStore,
+            processedHashes,
+            newlyProcessedHashes,
+            processingStrategy,
           })
           .on('finish', resolve);
       });

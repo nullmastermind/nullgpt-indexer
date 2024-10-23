@@ -1,8 +1,8 @@
 import { OpenAIEmbeddings, OpenAIEmbeddingsParams } from '@langchain/openai';
 import { AzureOpenAIInput } from '@langchain/openai/dist/types';
 
-import { storage } from '../constant';
-import { createMd5 } from './common';
+import { storage } from '../../constant';
+import { createMd5 } from '../common';
 
 class CachedEmbeddings extends OpenAIEmbeddings {
   private readonly waitingProcesses: any[];
