@@ -1,4 +1,4 @@
-import { LanceDB } from '@langchain/community/vectorstores/lancedb';
+import { FaissStore } from '@langchain/community/vectorstores/faiss';
 import { Document } from '@langchain/core/documents';
 import Queue from 'better-queue';
 import { Request, Response } from 'express';
@@ -25,7 +25,7 @@ const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000;
 
 type IndexerQueueInput = {
   filePath: string;
-  vectorStore: LanceDB;
+  vectorStore: FaissStore;
   processedHashes: Record<string, boolean>;
   newlyProcessedHashes: Record<string, boolean>;
   processingStrategy: 'code' | 'document';
@@ -156,10 +156,9 @@ const indexHandler = async (req: Request, res: Response) => {
   console.log('Cleaning...');
 
   if (processedFileCount.current > 0) {
-    // await vectorStore.save(vectorStoreDirectory);
+    await vectorStore.save(vectorStoreDirectory);
     await ensureFile(hashCacheFile);
     await writeFile(hashCacheFile, JSON.stringify(processedHashes));
-    await (vectorStore.embeddings as CachedEmbeddings).ensureAllDataSaved();
 
     vectorStores[documentId] = vectorStore;
     delete vectorStores[documentId];

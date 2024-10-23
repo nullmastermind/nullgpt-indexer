@@ -1,5 +1,5 @@
-import type { LanceDB } from '@langchain/community/vectorstores/lancedb';
-import { TextSplitter } from 'langchain/text_splitter';
+import { FaissStore } from '@langchain/community/vectorstores/faiss';
+import { TextSplitter } from '@langchain/textsplitters';
 import path from 'path';
 
 import Storage from './utility/Storage';
@@ -12,7 +12,7 @@ export const indexers = {};
 export const docsDir = path.join(process.cwd(), 'docs');
 export const indexSaveDir = path.join(process.cwd(), 'indexes');
 export const splitter: Record<string, TextSplitter> = {};
-export const vectorStores: Record<string, LanceDB> = {};
+export const vectorStores: Record<string, FaissStore> = {};
 export type TEmbeddingsType = 'tensorflow' | 'openai';
 export const embeddingsType = (process.env.EMBEDDINGS || 'openai') as TEmbeddingsType;
 export const storage = new Storage('DEFAULT');

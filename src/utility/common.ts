@@ -1,4 +1,4 @@
-import { LanceDB } from '@langchain/community/vectorstores/lancedb';
+import { FaissStore } from '@langchain/community/vectorstores/faiss';
 import { TextSplitter, TokenTextSplitter } from '@langchain/textsplitters';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
@@ -314,18 +314,18 @@ export const getVectorStore = async (
   docId: string,
   apiKey?: string,
   forceNew?: boolean,
-): Promise<LanceDB> => {
+): Promise<FaissStore> => {
   if (!vectorStores[docId] || forceNew) {
     const saveDir = path.join(indexSaveDir, docId);
     const embeddings = { current: undefined as any };
     const embeddingModel = env('EMBEDDING_MODEL', 'text-embedding-004');
-    const tableName = createMd5(['vectors', embeddingModel]);
+    // const tableName = createMd5(['vectors', embeddingModel]);
 
-    // Determine vector dimensions based on the model
-    const vectorDimensions = +env(
-      'EMBEDDING_DIMENSIONS',
-      env('EMBEDDINGS') === 'google' ? '768' : '1536',
-    );
+    // // Determine vector dimensions based on the model
+    // const vectorDimensions = +env(
+    //   'EMBEDDING_DIMENSIONS',
+    //   env('EMBEDDINGS') === 'google' ? '768' : '1536',
+    // );
 
     if (env('EMBEDDINGS') === 'google') {
       embeddings.current = new CachedGoogleGenerativeAIEmbeddings(docId, {
@@ -341,19 +341,11 @@ export const getVectorStore = async (
       });
     }
 
-    const db = await connect(saveDir);
-    if (!(await db.tableNames()).includes(tableName)) {
-      await db.createTable(tableName, [
-        {
-          vector: new Array(vectorDimensions).fill(0),
-          text: 'Hello world',
-          id: 1,
-        },
-      ]);
+    try {
+      vectorStores[docId] = await FaissStore.load(saveDir, embeddings.current);
+    } catch {
+      vectorStores[docId] = new FaissStore(embeddings.current, {});
     }
-    const table = await db.openTable(tableName);
-
-    vectorStores[docId] = new LanceDB(embeddings.current, { table });
   }
 
   return vectorStores[docId];
