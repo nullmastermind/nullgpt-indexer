@@ -1,8 +1,8 @@
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
 
 const getVersionHandler = async (req: Request, res: Response) => {
   res.status(200).json({
-    data: require("../../package.json").version,
+    data: require('../../package.json').version,
   });
 };
 

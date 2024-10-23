@@ -1,17 +1,18 @@
-import { Request, Response } from "express";
-import path from "path";
-import { docsDir } from "../const";
-import { ensureFile, pathExists, writeFile } from "fs-extra";
+import { Request, Response } from 'express';
+import { ensureFile, pathExists, writeFile } from 'fs-extra';
+import path from 'path';
+
+import { docsDir } from '../constant';
 
 const updateDocHandler = async (req: Request, res: Response) => {
   const { doc_id: docId, content } = req.body;
   const docDir = path.join(docsDir, docId);
 
   if (!(await pathExists(docDir))) {
-    return res.status(400).json({ error: "Invalid document ID" });
+    return res.status(400).json({ error: 'Invalid document ID' });
   }
 
-  const aliasFile = path.join(docDir, "1.alias");
+  const aliasFile = path.join(docDir, '1.alias');
 
   await ensureFile(aliasFile);
   await writeFile(aliasFile, content);

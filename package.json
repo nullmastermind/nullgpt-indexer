@@ -1,15 +1,44 @@
 {
   "name": "nullgpt-indexer",
   "version": "1.0.1",
-  "main": "index.js",
   "license": "MIT",
+  "main": "index.js",
   "scripts": {
-    "start:dev": "npx ts-node ./src/server.ts",
     "build": "rimraf ./build && tsc",
+    "format": "prettier --write src/**/*.ts",
+    "package": "yarn build && rimraf ./dist && node build.js",
     "start": "node ./build/server.js",
-    "package": "yarn build && rimraf ./dist && node build.js"
+    "start:dev": "bun ./src/server.ts"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@langchain/cohere": "^0.0.5",
+    "@langchain/community": "^0.3.8",
+    "@langchain/core": "^0.3.13",
+    "@langchain/google-genai": "^0.1.0",
+    "@langchain/openai": "^0.3.11",
+    "better-queue": "^3.8.12",
+    "cohere-ai": "^6.2.2",
+    "cors": "^2.8.5",
+    "d3-dsv": "2",
+    "delay": "^6.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "fast-glob": "^3.2.12",
+    "fs-extra": "^11.1.1",
+    "gpt-3-encoder": "^1.1.4",
+    "gpt-tokenizer": "^2.1.2",
+    "ignore": "^5.2.4",
+    "level": "^8.0.0",
+    "limiter": "^2.1.0",
+    "lodash": "^4.17.21",
+    "openai": "^4.28.0",
+    "p-limit": "^6.1.0",
+    "ts-retry-promise": "^0.8.1",
+    "vectordb": "^0.11.0"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/better-queue": "^3.8.3",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
@@ -17,24 +46,13 @@
     "@types/level": "^6.0.1",
     "@types/lodash": "^4.14.195",
     "@types/node": "^20.3.1",
-    "nexe": "^4.0.0-rc.2",
-    "prettier": "^2.8.8",
+    "prettier": "^3.2.5",
+    "prettier-plugin-organize-imports": "^3.2.4",
+    "prettier-plugin-packagejson": "^2.4.12",
+    "prettier-plugin-sh": "^0.14.0",
+    "prettier-plugin-sort-json": "^3.1.0",
     "rimraf": "^5.0.1",
     "typescript": "^5.1.5"
   },
-  "dependencies": {
-    "better-queue": "^3.8.12",
-    "cohere-ai": "^6.2.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "faiss-node": "^0.2.1",
-    "fast-glob": "^3.2.12",
-    "fs-extra": "^11.1.1",
-    "gpt-3-encoder": "^1.1.4",
-    "ignore": "^5.2.4",
-    "langchain": "^0.0.96",
-    "level": "^8.0.0",
-    "lodash": "^4.17.21"
-  }
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

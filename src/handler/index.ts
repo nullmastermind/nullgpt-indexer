@@ -1,195 +1,211 @@
-import { Request, Response } from "express";
-import path from "path";
+import { LanceDB } from '@langchain/community/vectorstores/lancedb';
+import { Document } from '@langchain/core/documents';
+import Queue from 'better-queue';
+import { Request, Response } from 'express';
+import { ensureFile, pathExists, readFile, readJson, writeFile } from 'fs-extra';
+import { forEach } from 'lodash';
+import path from 'path';
+
+import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
+import SummarySplitter from '../utility/SummarySplitter';
 import {
   createMd5,
   filterDocIndex,
+  getLoader,
   getSplitter,
   getVectorStore,
   isMD5,
   listFilesRecursively,
-} from "../u";
-import { pathExists, readJson, writeFile } from "fs-extra";
-import { db, docsDir, indexSaveDir, vectorStores } from "../const";
-import { TextLoader } from "langchain/document_loaders/fs/text";
-import Queue from "better-queue";
-import { FaissStore } from "langchain/vectorstores/faiss";
-import { forEach, throttle, uniqueId } from "lodash";
-import CachedOpenAIEmbeddings from "../utility/CachedOpenAIEmbeddings";
-import CachedCohereEmbeddings from "../utility/CachedCohereEmbeddings";
+  non,
+} from '../utility/common';
+import CachedEmbeddings from '../utility/embeddings/CachedEmbeddings';
 
-const cacheTTLMillis = 7 * 24 * 60 * 60 * 1000;
+// Cache TTL set to 7 days in milliseconds
+const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000;
 
 type IndexerQueueInput = {
-  f: string;
-  vectorStore: FaissStore;
-  indexedHash: Record<string, boolean>;
-  newIndexedHash: Record<string, boolean>;
+  filePath: string;
+  vectorStore: LanceDB;
+  processedHashes: Record<string, boolean>;
+  newlyProcessedHashes: Record<string, boolean>;
+  processingStrategy: 'code' | 'document';
 };
 
-const indexerQueue = new Queue<IndexerQueueInput>(
+const documentProcessingQueue = new Queue<IndexerQueueInput>(
   async (
-    { f, vectorStore, indexedHash, newIndexedHash }: IndexerQueueInput,
-    cb
+    {
+      filePath,
+      vectorStore,
+      processedHashes,
+      newlyProcessedHashes,
+      processingStrategy,
+    }: IndexerQueueInput,
+    callback,
   ) => {
     try {
-      const ext = path.extname(f);
-      const splitter = getSplitter(ext);
-      const loader = new TextLoader(f);
-      const docs = (await loader.loadAndSplit(splitter)).filter((doc) => {
-        return filterDocIndex(doc);
+      const fileExtension = path.extname(filePath);
+      const { loader, split } = await getLoader(filePath, processingStrategy);
+      let documents: Document[];
+      if (split) {
+        const splitter = getSplitter(fileExtension) as SummarySplitter;
+        const chunks = await splitter.splitText(
+          (await readFile(filePath)).toString('utf-8'),
+          filePath,
+        );
+
+        // console.log('------------------------------------');
+        // console.log(chunks[0]);
+        // console.log('------------------------------------');
+
+        documents = await splitter.createDocuments(chunks);
+      } else {
+        documents = await loader.load();
+      }
+      documents = documents.filter((document: Document) => {
+        return filterDocIndex(document);
       });
-      const md5 = createMd5(docs.map((v) => v.pageContent).join(""));
-      const tempIndexedHash: Record<string, boolean> = {};
-      const isNewIndex = !indexedHash[md5];
+      const contentHash = createMd5(documents.map((doc) => doc.pageContent));
+      const temporaryProcessedHashes: Record<string, boolean> = {};
+      const isNewDocument = !processedHashes[contentHash];
 
       await vectorStore.addDocuments(
-        docs
-          .map((doc) => {
-            const relativePath = (
-              path.relative(docsDir, doc.metadata.source) as string
-            )
-              .split(path.sep)
-              .join("/")
-              .split("../")
-              .join("")
-              .split("./")
-              .join("");
-            const tempDocName = relativePath.split("/");
-            const docName = [
-              "/",
-              tempDocName
-                .filter((v, i) => tempDocName.length - i <= 3)
-                .filter((v) => ![".", ".."].includes(v))
-                .join("/"),
-            ].join("");
+        documents
+          .map((document) => {
+            const documentPath = filePath.split('/').join(path.sep);
 
-            doc.pageContent = `DOCUMENT NAME: ${docName}\n\n${doc.pageContent}`;
+            // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
+            document.pageContent = `File Location: ${documentPath}
+-------------------
 
-            doc.metadata.source = "/home/fakeuser" + docName;
-            doc.metadata["md5"] = md5;
-            doc.metadata["hash"] = createMd5(doc.pageContent);
+${document.pageContent}`;
 
-            return doc;
+            document.metadata.source = documentPath;
+            document.metadata['md5'] = contentHash;
+            document.metadata['hash'] = createMd5(document.pageContent);
+
+            return document;
           })
-          .map((doc) => {
-            tempIndexedHash[doc.metadata["hash"]] = true;
-            return doc;
-          })
+          .map((document) => {
+            temporaryProcessedHashes[document.metadata['hash']] = true;
+            return document;
+          }),
       );
 
-      indexedHash[md5] = true;
-      newIndexedHash[md5] = true;
-      forEach(tempIndexedHash, (value, key) => {
-        indexedHash[key] = true;
-        newIndexedHash[key] = true;
+      processedHashes[contentHash] = true;
+      newlyProcessedHashes[contentHash] = true;
+      forEach(temporaryProcessedHashes, (value, key) => {
+        processedHashes[key] = true;
+        newlyProcessedHashes[key] = true;
       });
 
-      cb(null, isNewIndex);
-    } catch (e) {
-      cb(e);
+      callback(null, isNewDocument);
+    } catch (error) {
+      console.error(error);
+      callback(error);
     }
   },
   {
     concurrent: 10,
     maxRetries: 10,
     retryDelay: 5000,
-  }
+  },
 );
 
-const clearConsole = throttle(() => {
-  console.clear();
-}, 10000);
-
 const indexHandler = async (req: Request, res: Response) => {
-  const { doc_id: docId, extensions, api_key: apiKey } = req.body;
-  const indexDir = path.join(docsDir, docId);
+  const { doc_id: documentId, extensions: allowedExtensions } = req.body;
+  const documentDirectory = path.join(docsDir, documentId);
 
-  if (!(await pathExists(indexDir))) {
-    console.log("The path does not exist.", docId);
-    return res.status(400).json({ error: "The path does not exist." });
+  if (!(await pathExists(documentDirectory))) {
+    console.log('The path does not exist.', documentId);
+    return res.status(400).json({ error: 'The path does not exist.' });
   }
 
-  clearConsole();
-  console.log(`Start training ${docId}...`);
+  await storage.set(`${documentId}:extensions`, allowedExtensions);
 
-  const saveTo = path.join(indexSaveDir, docId);
-  const indexedHashFile = path.join(saveTo, "indexedHash.json");
-  const tempVectorStoreId = uniqueId("VectorStore");
-  const vectorStore = await getVectorStore(
-    tempVectorStoreId,
-    docId,
-    apiKey,
-    true
-  );
-  const indexed = { current: 0 };
-  let indexedHash: Record<string, boolean> = {};
-  if (await pathExists(indexedHashFile)) {
-    indexedHash = await readJson(indexedHashFile);
+  console.log(`Starting code indexing and embedding generation for document ID: ${documentId}`);
+
+  const vectorStoreDirectory = path.join(indexSaveDir, documentId);
+  const hashCacheFile = path.join(vectorStoreDirectory, 'indexedHash.json');
+  const vectorStore = await getVectorStore(documentId, documentId, undefined, true);
+  const processedFileCount = { current: 0 };
+  let processedHashes: Record<string, boolean> = {};
+  if (await pathExists(hashCacheFile)) {
+    processedHashes = await readJson(hashCacheFile);
   }
-  const newIndexedHash: Record<string, boolean> = {};
+  const newlyProcessedHashes: Record<string, boolean> = {};
 
-  await listFilesRecursively(indexDir, extensions, async (f) => {
-    const exec = () => {
-      return new Promise((rel) => {
-        indexerQueue
+  await listFilesRecursively(documentDirectory, allowedExtensions, async (filePath) => {
+    const processFile = (processingStrategy: 'code' | 'document') => {
+      return new Promise((resolve) => {
+        documentProcessingQueue
           .push({
-            f,
+            filePath,
             vectorStore,
-            indexedHash,
-            newIndexedHash,
+            processedHashes,
+            newlyProcessedHashes,
+            processingStrategy,
           })
-          .on("finish", rel);
+          .on('finish', resolve);
       });
     };
 
-    if (await exec()) {
-      console.log("indexed:", f);
-    }
-    indexed.current += 1;
+    await processFile('code');
+
+    console.log(`Successfully indexed file: ${filePath}`);
+
+    processedFileCount.current += 1;
   });
 
-  console.log("Cleaning...");
+  console.log('Cleaning...');
 
-  if (indexed.current > 0) {
-    await vectorStore.save(saveTo);
-    await writeFile(indexedHashFile, JSON.stringify(indexedHash));
-    await (
-      vectorStore.embeddings as CachedOpenAIEmbeddings | CachedCohereEmbeddings
-    ).ensureAllDataSaved();
+  if (processedFileCount.current > 0) {
+    // await vectorStore.save(vectorStoreDirectory);
+    await ensureFile(hashCacheFile);
+    await writeFile(hashCacheFile, JSON.stringify(processedHashes));
+    await (vectorStore.embeddings as CachedEmbeddings).ensureAllDataSaved();
 
-    vectorStores[docId] = vectorStore;
-    delete vectorStores[tempVectorStoreId];
+    vectorStores[documentId] = vectorStore;
+    delete vectorStores[documentId];
   }
 
-  await db.set(`${docId}:extensions`, extensions);
-  await db.set(`${docId}:indexAt`, new Date());
+  await storage.set(`${documentId}:indexAt`, new Date());
 
   // remove unused keys
-  db.eachKey(async (key) => {
-    if (isMD5(key)) {
-      const updatedAt = await db.get(`${key}:updatedAt`);
-      if (updatedAt === undefined) {
-        db.del(key).finally();
-        console.log("removed:", key);
-      } else {
-        const keyDocId = await db.get(`${key}:doc_id`);
-        if (keyDocId === docId) {
-          const lastUpdateAt = new Date(updatedAt);
-          const diff = Date.now() - lastUpdateAt.getTime();
-          if (diff > cacheTTLMillis) {
-            db.del(key).finally();
-            db.del(`${key}:doc_id`).finally();
-            db.del(`${key}:updatedAt`).finally();
-            console.log("removed:", key);
+  void storage
+    .eachKey(async (key) => {
+      if (isMD5(key)) {
+        const lastUpdated = await storage.get(`${key}:updatedAt`);
+        if (lastUpdated === undefined) {
+          storage.del(key).finally();
+          console.log('removed:', key);
+        } else {
+          const storedDocumentId = await storage.get(`${key}:doc_id`);
+          if (storedDocumentId === documentId) {
+            const lastUpdateTimestamp = new Date(lastUpdated);
+            const timeSinceUpdate = Date.now() - lastUpdateTimestamp.getTime();
+            if (timeSinceUpdate > CACHE_TTL_MILLIS) {
+              storage.del(key).finally();
+              storage.del(`${key}:doc_id`).finally();
+              storage.del(`${key}:updatedAt`).finally();
+              console.log('removed:', key);
+            }
           }
         }
       }
-    }
-  }).finally();
+    })
+    .catch(non);
 
-  console.log("Successfully indexed FaissStore");
+  console.log(`Successfully indexed ${processedFileCount.current} files for ${documentId}`);
 
-  res.status(201).json({ message: "Successfully indexed FaissStore" });
+  res.status(201).json({
+    message: `Successfully indexed ${processedFileCount.current} files`,
+    details: {
+      docId: documentId,
+      filesIndexed: processedFileCount.current,
+      newHashes: Object.keys(newlyProcessedHashes).length,
+      timestamp: new Date().toISOString(),
+    },
+  });
 };
 
 export default indexHandler;

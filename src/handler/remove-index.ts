@@ -1,7 +1,8 @@
-import { Request, Response } from "express";
-import { pathExists, remove } from "fs-extra";
-import { docsDir, indexSaveDir } from "../const";
-import path from "path";
+import { Request, Response } from 'express';
+import { pathExists, remove } from 'fs-extra';
+import path from 'path';
+
+import { docsDir, indexSaveDir } from '../constant';
 
 const removeIndexHandler = async (req: Request, res: Response) => {
   const { doc_id: docId } = req.body;
