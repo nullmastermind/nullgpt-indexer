@@ -341,6 +341,9 @@ export const getVectorStore = async (
     }
 
     try {
+      if (forceNew) {
+        throw new Error('Force new vector store creation requested');
+      }
       vectorStores[docId] = await FaissStore.load(saveDir, embeddings.current);
     } catch {
       vectorStores[docId] = new FaissStore(embeddings.current, {});
