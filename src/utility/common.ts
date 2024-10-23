@@ -1,4 +1,5 @@
 import { LanceDB } from '@langchain/community/vectorstores/lancedb';
+import { TextSplitter, TokenTextSplitter } from '@langchain/textsplitters';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
 import fg from 'fast-glob';
@@ -8,7 +9,6 @@ import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
-import { TextSplitter, TokenTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
 import { connect } from 'vectordb';
