@@ -8,7 +8,7 @@
     "format": "prettier --write src/**/*.ts",
     "package": "yarn build && rimraf ./dist && node build.js",
     "start": "node ./build/server.js",
-    "start:dev": "ts-node ./src/server.ts"
+    "start:dev": "bun ./src/server.ts"
   },
   "dependencies": {
     "@langchain/cohere": "^0.0.5",
@@ -19,6 +19,7 @@
     "cohere-ai": "^6.2.2",
     "cors": "^2.8.5",
     "d3-dsv": "2",
+    "delay": "^6.0.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "fast-glob": "^3.2.12",
@@ -42,14 +43,12 @@
     "@types/level": "^6.0.1",
     "@types/lodash": "^4.14.195",
     "@types/node": "^20.3.1",
-    "nexe": "^4.0.0-rc.2",
     "prettier": "^3.2.5",
     "prettier-plugin-organize-imports": "^3.2.4",
     "prettier-plugin-packagejson": "^2.4.12",
     "prettier-plugin-sh": "^0.14.0",
     "prettier-plugin-sort-json": "^3.1.0",
     "rimraf": "^5.0.1",
-    "ts-node": "^10.9.2",
     "typescript": "^5.1.5"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"

@@ -1,4 +1,4 @@
-import { FaissStore } from '@langchain/community/vectorstores/faiss';
+import { LanceDB } from '@langchain/community/vectorstores/lancedb';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
 import fg from 'fast-glob';
@@ -8,16 +8,13 @@ import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
-import {
-  RecursiveCharacterTextSplitter,
-  TextSplitter,
-  TokenTextSplitter,
-} from 'langchain/text_splitter';
+import { TextSplitter, TokenTextSplitter } from 'langchain/text_splitter';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
+import { connect } from 'vectordb';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
-import CachedOpenAIEmbeddings from './CachedOpenAIEmbeddings';
+import CachedEmbeddings from './CachedEmbeddings';
 import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
 
@@ -145,42 +142,49 @@ export function isOnlySpecial(content: string) {
   return specialRegex.test(content);
 }
 
+// Hashed content typically consists of a single continuous string of alphanumeric/hex characters
+// without spaces, tabs, newlines, or special characters
+export const isHashedContent = (content: string): boolean => {
+  if (!content) return true;
+
+  // Most hashes are fixed length and only contain hex characters
+  const HASH_PATTERN = /^[a-f0-9]+$/i;
+
+  // Return true if it's NOT a hash (for compatibility with existing filter logic)
+  return !HASH_PATTERN.test(content);
+};
+
 export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
   // filter hash
-  if (
-    !doc.pageContent.includes(' ') &&
-    !doc.pageContent.includes('\t') &&
-    !doc.pageContent.includes(';') &&
-    !doc.pageContent.includes('\n')
-  ) {
+  if (isHashedContent(doc.pageContent)) {
     return false;
   }
 
-  if (['.cs'].includes(path.extname(doc.metadata.source))) {
-    // ignore c# import
-    const lines = doc.pageContent
-      .split('\n')
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0)
-      .filter((v) => !v.startsWith('using'));
-    if (lines.length === 0) {
-      console.log('ignored c# import');
-      return false;
-    }
-  } else if (['.js', '.jsx', '.ts', 'tsx'].includes(path.extname(doc.metadata.source))) {
-    // ignore js import
-    const lines = doc.pageContent
-      .split('\n')
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0)
-      .filter((v) => {
-        return !(v.startsWith('const') || v.startsWith('import'));
-      });
-    if (lines.length === 0) {
-      console.log('ignored js import');
-      return false;
-    }
-  }
+  // if (['.cs'].includes(path.extname(doc.metadata.source))) {
+  //   // ignore c# import
+  //   const lines = doc.pageContent
+  //     .split('\n')
+  //     .map((v) => v.trim())
+  //     .filter((v) => v.length > 0)
+  //     .filter((v) => !v.startsWith('using'));
+  //   if (lines.length === 0) {
+  //     console.log('ignored c# import');
+  //     return false;
+  //   }
+  // } else if (['.js', '.jsx', '.ts', 'tsx'].includes(path.extname(doc.metadata.source))) {
+  //   // ignore js import
+  //   const lines = doc.pageContent
+  //     .split('\n')
+  //     .map((v) => v.trim())
+  //     .filter((v) => v.length > 0)
+  //     .filter((v) => {
+  //       return !(v.startsWith('const') || v.startsWith('import'));
+  //     });
+  //   if (lines.length === 0) {
+  //     console.log('ignored js import');
+  //     return false;
+  //   }
+  // }
 
   // ignore if all lines contains special symbol only
   // const lines = doc.pageContent
@@ -304,30 +308,25 @@ export const getVectorStore = async (
   embeddingsDocId: string,
   apiKey?: string,
   forceNew?: boolean,
-): Promise<FaissStore> => {
+): Promise<LanceDB> => {
   if (!vectorStores[docId] || forceNew) {
     const saveDir = path.join(indexSaveDir, docId);
     const embeddings = { current: undefined as any };
 
-    embeddings.current = new CachedOpenAIEmbeddings(embeddingsDocId, {
+    embeddings.current = new CachedEmbeddings(embeddingsDocId, {
       openAIApiKey: apiKey || env('OPENAI_API_KEY'),
       maxConcurrency: +env('MAX_CONCURRENCY', '5'),
       maxRetries: 10,
-      modelName: env('EMBEDDING_MODEL_NAME', 'text-embedding-3-small'), // dimensions: 1024,
+      modelName: env('EMBEDDING_MODEL', 'text-embedding-3-small'), // dimensions: 1024,
     });
 
-    if (await pathExists(path.join(saveDir, 'docstore.json'))) {
-      vectorStores[docId] = await FaissStore.load(
-        path.join(indexSaveDir, docId),
-        embeddings.current,
-      );
-    } else {
-      vectorStores[docId] = await FaissStore.fromTexts(
-        ['Hello world!'],
-        [{ id: 1 }],
-        embeddings.current,
-      );
+    const db = await connect(saveDir);
+    if (!(await db.tableNames()).includes('vectors')) {
+      await db.createTable('vectors', [{ vector: Array(1536), text: 'Hello world', id: 1 }]);
     }
+    const table = await db.openTable('vectors');
+
+    vectorStores[docId] = new LanceDB(embeddings.current, { table });
   }
 
   return vectorStores[docId];
@@ -426,3 +425,5 @@ export const getLoader = async (
     split: true,
   };
 };
+
+export const non = () => {};
