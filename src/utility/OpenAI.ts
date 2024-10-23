@@ -34,8 +34,7 @@ export const addChunkContext = retryDecorator(
       },
       {
         role: 'user',
-        content: `
-File: ${filePath}
+        content: `File Location: ${filePath}
 
 <document>
 ${content}
@@ -46,8 +45,7 @@ Here is the chunk we want to situate within the whole document
 ${chunk}
 </chunk>
 
-Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Include relevant file path context if helpful. Answer only with the succinct context and nothing else.
-      `.trim(),
+Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Include relevant file path context if helpful. Answer only with the succinct context and nothing else.`,
       },
     ];
     const model = env('CONTEXTUAL_MODEL_NAME', 'gpt-4o-mini');
