@@ -2,14 +2,13 @@ import { LanceDB } from '@langchain/community/vectorstores/lancedb';
 import { Document } from '@langchain/core/documents';
 import Queue from 'better-queue';
 import { Request, Response } from 'express';
-import { pathExists, readFile, readJson, writeFile } from 'fs-extra';
+import { ensureFile, pathExists, readFile, readJson, writeFile } from 'fs-extra';
 import { forEach } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
 import {
   createMd5,
-  env,
   filterDocIndex,
   getLoader,
   getSplitter,
@@ -43,16 +42,16 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
     callback,
   ) => {
     try {
-      if (processingStrategy === 'document' && !env('SUMMARY_MODEL_NAME')) {
-        return;
-      }
-
       const fileExtension = path.extname(filePath);
       const { loader, split } = await getLoader(filePath, processingStrategy);
       let documents: Document[];
       if (split) {
         const splitter = getSplitter(fileExtension);
         const chunks = await splitter.splitText((await readFile(filePath)).toString('utf-8'));
+
+        console.log('------------------------------------');
+        console.log(chunks[0]);
+        console.log('------------------------------------');
 
         documents = await splitter.createDocuments(chunks);
       } else {
@@ -94,6 +93,7 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
 
       callback(null, isNewDocument);
     } catch (error) {
+      console.error(error);
       callback(error);
     }
   },
@@ -142,7 +142,7 @@ const indexHandler = async (req: Request, res: Response) => {
       });
     };
 
-    await Promise.all([processFile('code')]);
+    await processFile('code');
 
     console.log(`Successfully indexed file: ${filePath}`);
 
@@ -153,6 +153,7 @@ const indexHandler = async (req: Request, res: Response) => {
 
   if (processedFileCount.current > 0) {
     // await vectorStore.save(vectorStoreDirectory);
+    await ensureFile(hashCacheFile);
     await writeFile(hashCacheFile, JSON.stringify(processedHashes));
     await (vectorStore.embeddings as CachedEmbeddings).ensureAllDataSaved();
 

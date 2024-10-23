@@ -1,6 +1,7 @@
 import { TokenTextSplitter } from '@langchain/textsplitters';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
+import { addChunkContext } from './OpenAI';
 import { countTokens, env } from './common';
 
 export type SummaryStrategy = 'document' | 'code' | string;
@@ -42,9 +43,9 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
     const overlapRatio = recommendedTokens > 400 ? 0.3 : 0.2;
     const overlap = Math.ceil(recommendedTokens * overlapRatio);
 
-    // console.log(
-    //   `Splitting text into chunks: ${textTokens} total tokens, ${overlap} token overlap, ${recommendedTokens} tokens per chunk`,
-    // );
+    console.log(
+      `Splitting text into chunks: ${textTokens} total tokens, ${overlap} token overlap, ${recommendedTokens} tokens per chunk`,
+    );
 
     const splitter = new TokenTextSplitter({
       encodingName: 'cl100k_base',
@@ -52,7 +53,18 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
       chunkSize: recommendedTokens,
     });
 
-    return splitter.splitText(text);
+    const chunks = await splitter.splitText(text);
+
+    return Promise.all(
+      chunks.map(async (chunk) => {
+        const context = await addChunkContext(text, chunk, this.summaryStrategy);
+
+        if (this.summaryStrategy === 'code') {
+          return `### Context\n${context}\n\n### Chunk content\n\`\`\`\n${chunk}\n\`\`\``;
+        }
+        return `### Context\n${context}\n\n### Chunk content\n${chunk}`;
+      }),
+    );
   }
 }
 

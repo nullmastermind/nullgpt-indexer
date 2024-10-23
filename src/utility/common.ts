@@ -210,7 +210,7 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
 };
 
 export const getSplitter = (ext: string): TextSplitter => {
-  if (env('SUMMARY_MODEL_NAME')?.length > 0) {
+  if (env('CONTEXTUAL_MODEL_NAME')?.length > 0) {
     let summaryStrategy = 'document';
 
     if (
