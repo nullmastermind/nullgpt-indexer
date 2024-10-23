@@ -18,7 +18,6 @@ import {
   listFilesRecursively,
   non,
 } from '../utility/common';
-import CachedEmbeddings from '../utility/embeddings/CachedEmbeddings';
 
 // Cache TTL set to 7 days in milliseconds
 const CACHE_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000;
@@ -68,15 +67,13 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       await vectorStore.addDocuments(
         documents
           .map((document) => {
-            const documentPath = filePath.split('/').join(path.sep);
-
             // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
-            document.pageContent = `File Location: ${documentPath}
--------------------
+            //             document.pageContent = `File Location: ${documentPath}
+            // -------------------
+            //
+            // ${document.pageContent}`;
 
-${document.pageContent}`;
-
-            document.metadata.source = documentPath;
+            document.metadata.source = filePath.split('/').join(path.sep);
             document.metadata['md5'] = contentHash;
             document.metadata['hash'] = createMd5(document.pageContent);
 
