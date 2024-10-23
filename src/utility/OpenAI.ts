@@ -18,7 +18,12 @@ export const openai = new OpenAI({
 });
 
 export const addChunkContext = retryDecorator(
-  async (content: string, chunk: string, strategy: SummaryStrategy): Promise<string | null> => {
+  async (
+    filePath: string,
+    content: string,
+    chunk: string,
+    strategy: SummaryStrategy,
+  ): Promise<string | null> => {
     await limiter.removeTokens(1);
 
     const messages: any[] = [
@@ -30,6 +35,8 @@ export const addChunkContext = retryDecorator(
       {
         role: 'user',
         content: `
+File: ${filePath}
+
 <document>
 ${content}
 </document>
@@ -39,7 +46,7 @@ Here is the chunk we want to situate within the whole document
 ${chunk}
 </chunk>
 
-Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.
+Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Include relevant file path context if helpful. Answer only with the succinct context and nothing else.
       `.trim(),
       },
     ];

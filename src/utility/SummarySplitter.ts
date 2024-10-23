@@ -57,11 +57,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
 
     return Promise.all(
       chunks.map(async (chunk) => {
-        const context = await addChunkContext(
-          `path: ${filePath}\n\n${text}`,
-          chunk,
-          this.summaryStrategy,
-        );
+        const context = await addChunkContext(filePath, text, chunk, this.summaryStrategy);
 
         if (this.summaryStrategy === 'code') {
           return `### Context\n${context}\n\n### Chunk content\n\`\`\`\n${chunk}\n\`\`\``;
