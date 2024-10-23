@@ -15,7 +15,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
     this.summaryStrategy = summaryStrategy;
   }
 
-  async splitText(text: string): Promise<string[]> {
+  async splitText(text: string, filePath?: string): Promise<string[]> {
     // Get total tokens in text
     const textTokens = await countTokens(text);
 
@@ -57,7 +57,11 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
 
     return Promise.all(
       chunks.map(async (chunk) => {
-        const context = await addChunkContext(text, chunk, this.summaryStrategy);
+        const context = await addChunkContext(
+          `path: ${filePath}\n\n${text}`,
+          chunk,
+          this.summaryStrategy,
+        );
 
         if (this.summaryStrategy === 'code') {
           return `### Context\n${context}\n\n### Chunk content\n\`\`\`\n${chunk}\n\`\`\``;

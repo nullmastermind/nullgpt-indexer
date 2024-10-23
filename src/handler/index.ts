@@ -7,6 +7,7 @@ import { forEach } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
+import SummarySplitter from '../utility/SummarySplitter';
 import {
   createMd5,
   filterDocIndex,
@@ -46,8 +47,11 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       const { loader, split } = await getLoader(filePath, processingStrategy);
       let documents: Document[];
       if (split) {
-        const splitter = getSplitter(fileExtension);
-        const chunks = await splitter.splitText((await readFile(filePath)).toString('utf-8'));
+        const splitter = getSplitter(fileExtension) as SummarySplitter;
+        const chunks = await splitter.splitText(
+          (await readFile(filePath)).toString('utf-8'),
+          filePath,
+        );
 
         // console.log('------------------------------------');
         // console.log(chunks[0]);
@@ -70,7 +74,10 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
             const documentPath = filePath.split(path.sep).join('/');
 
             // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
-            document.pageContent = `DOCUMENT NAME: ${documentPath}\n\n${document.pageContent}`;
+            document.pageContent = `File Location: ${documentPath}
+-------------------
+
+${document.pageContent}`;
 
             document.metadata.source = documentPath;
             document.metadata['md5'] = contentHash;
