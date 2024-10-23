@@ -47,7 +47,7 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
     // );
 
     const splitter = new TokenTextSplitter({
-      encodingName: 'gpt2',
+      encodingName: 'cl100k_base',
       chunkOverlap: overlap,
       chunkSize: recommendedTokens,
     });
