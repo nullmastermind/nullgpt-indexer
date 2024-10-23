@@ -7,8 +7,8 @@ import { storage } from '../../constant';
 import { createMd5 } from '../common';
 
 const limiter = new RateLimiter({
-  interval: 'minute',
-  tokensPerInterval: +(process.env.EMBEDDING_RATE_LIMIT || '1500'),
+  interval: 'second',
+  tokensPerInterval: +(process.env.EMBEDDING_RATE_LIMIT || '20'),
 });
 
 class CachedGoogleGenerativeAIEmbeddings extends GoogleGenerativeAIEmbeddings {
@@ -44,6 +44,7 @@ class CachedGoogleGenerativeAIEmbeddings extends GoogleGenerativeAIEmbeddings {
       {
         retries: 10,
         delay: 10000,
+        timeout: 'INFINITELY',
       },
     );
 

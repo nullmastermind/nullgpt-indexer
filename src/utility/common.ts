@@ -399,9 +399,13 @@ export function gitAddSafeDir(cwd: string): Promise<string> {
 }
 
 export const countTokens = async (content: string) => {
-  const { encode } = await import('gpt-tokenizer');
+  try {
+    const { encode } = await import('gpt-tokenizer');
 
-  return encode(content).length;
+    return encode(content).length;
+  } catch {
+    return 0;
+  }
 };
 
 // export const scoreNormalizer = (score: number) => {

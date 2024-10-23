@@ -118,9 +118,9 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
     }
   },
   {
-    concurrent: 10,
+    concurrent: 100,
     maxRetries: 10,
-    retryDelay: 5000,
+    retryDelay: 10000,
   },
 );
 
