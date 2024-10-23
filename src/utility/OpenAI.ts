@@ -74,6 +74,6 @@ Please give a short succinct context to situate this chunk within the overall do
   },
   {
     retries: 3,
-    delay: 3000,
+    delay: 10000,
   },
 );
