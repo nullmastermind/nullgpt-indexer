@@ -67,42 +67,44 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       const temporaryProcessedHashes: Record<string, boolean> = {};
       const isNewDocument = !processedHashes[contentHash];
 
-      await vectorStore.addDocuments(
-        await Promise.all(
-          documents
-            .map((document) => {
-              // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
-              //             document.pageContent = `File Location: ${documentPath}
-              // -------------------
-              //
-              // ${document.pageContent}`;
+      if (documents.length) {
+        await vectorStore.addDocuments(
+          await Promise.all(
+            documents
+              .map((document) => {
+                // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
+                //             document.pageContent = `File Location: ${documentPath}
+                // -------------------
+                //
+                // ${document.pageContent}`;
 
-              document.metadata.source = filePath.split('/').join(path.sep);
-              document.metadata['md5'] = contentHash;
-              document.metadata['hash'] = createMd5(document.pageContent);
+                document.metadata.source = filePath.split('/').join(path.sep);
+                document.metadata['md5'] = contentHash;
+                document.metadata['hash'] = createMd5(document.pageContent);
 
-              return document;
-            })
-            .map((document) => {
-              temporaryProcessedHashes[document.metadata['hash']] = true;
-              return document;
-            })
-            .map(async (document) => {
-              if (split) {
-                const context = await addChunkContext(
-                  filePath,
-                  fileContent,
-                  document.pageContent,
-                  processingStrategy,
-                );
+                return document;
+              })
+              .map((document) => {
+                temporaryProcessedHashes[document.metadata['hash']] = true;
+                return document;
+              })
+              .map(async (document) => {
+                if (split) {
+                  const context = await addChunkContext(
+                    filePath,
+                    fileContent,
+                    document.pageContent,
+                    processingStrategy,
+                  );
 
-                document.pageContent = `${context}\n---\n${document.pageContent}`;
-              }
+                  document.pageContent = `${context}\n---\n${document.pageContent}`;
+                }
 
-              return document;
-            }),
-        ),
-      );
+                return document;
+              }),
+          ),
+        );
+      }
 
       processedHashes[contentHash] = true;
       newlyProcessedHashes[contentHash] = true;

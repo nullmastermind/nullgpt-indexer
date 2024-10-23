@@ -19,12 +19,15 @@ class SummarySplitter {
     metadatas?: Record<string, any>[],
     chunkHeaderOptions?: any,
   ) {
-    return this.splitter.createDocuments(texts, metadatas, chunkHeaderOptions);
+    if (!this.splitter) return [];
+    return this.splitter?.createDocuments(texts, metadatas, chunkHeaderOptions);
   }
 
   async splitText(text: string): Promise<string[]> {
     // Get total tokens in text
     const textTokens = await countTokens(text);
+
+    if (textTokens === 0) return [];
 
     // Constants for token size constraints
     const MIN_TOKENS = +env('CHUNK_MIN_TOKENS', '150');
