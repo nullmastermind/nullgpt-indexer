@@ -137,27 +137,14 @@ export async function getIgnores(dir: string): Promise<[string[], Record<string,
   return [keys, mapValue];
 }
 
-export function isOnlySpecial(content: string) {
-  const specialRegex = /^[^\p{L}\s]+$/u;
-
-  return specialRegex.test(content);
-}
-
-// Hashed content typically consists of a single continuous string of alphanumeric/hex characters
-// without spaces, tabs, newlines, or special characters
-export const isHashedContent = (content: string): boolean => {
-  if (!content) return true;
-
-  // Most hashes are fixed length and only contain hex characters
-  const HASH_PATTERN = /^[a-f0-9]+$/i;
-
-  // Return true if it's NOT a hash (for compatibility with existing filter logic)
-  return !HASH_PATTERN.test(content);
-};
-
-export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
+export const filterDocIndex = (doc: Document): boolean => {
   // filter hash
-  if (isHashedContent(doc.pageContent)) {
+  if (
+    !doc.pageContent.includes(' ') &&
+    !doc.pageContent.includes('\t') &&
+    !doc.pageContent.includes(';') &&
+    !doc.pageContent.includes('\n')
+  ) {
     return false;
   }
 
@@ -209,7 +196,7 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
   return defaultValue;
 };
 
-export const getSplitter = (ext: string): TextSplitter => {
+export const getSplitter = (filePath: string, ext: string): TextSplitter => {
   if (env('CONTEXTUAL_MODEL_NAME')?.length > 0) {
     let summaryStrategy = 'document';
 
@@ -308,7 +295,7 @@ export const getSplitter = (ext: string): TextSplitter => {
       summaryStrategy = ext;
     }
 
-    return new SummarySplitter(summaryStrategy);
+    return new SummarySplitter(summaryStrategy, filePath);
   }
 
   if (!splitter[ext]) {
@@ -325,35 +312,46 @@ export const getSplitter = (ext: string): TextSplitter => {
 
 export const getVectorStore = async (
   docId: string,
-  embeddingsDocId: string,
   apiKey?: string,
   forceNew?: boolean,
 ): Promise<LanceDB> => {
   if (!vectorStores[docId] || forceNew) {
     const saveDir = path.join(indexSaveDir, docId);
     const embeddings = { current: undefined as any };
+    const embeddingModel = env('EMBEDDING_MODEL', 'text-embedding-004');
+    const tableName = createMd5(['vectors', embeddingModel]);
+
+    // Determine vector dimensions based on the model
+    const vectorDimensions = +env(
+      'EMBEDDING_DIMENSIONS',
+      env('EMBEDDINGS') === 'google' ? '768' : '1536',
+    );
 
     if (env('EMBEDDINGS') === 'google') {
-      embeddings.current = new CachedGoogleGenerativeAIEmbeddings(embeddingsDocId, {
+      embeddings.current = new CachedGoogleGenerativeAIEmbeddings(docId, {
         apiKey: env('GOOGLE_API_KEY'),
-        // maxConcurrency: +env('MAX_CONCURRENCY', '5'),
         maxRetries: +env('MAX_RETRIES', '10'),
-        model: env('EMBEDDING_MODEL', 'text-embedding-004'), // dimensions: 768,
+        model: embeddingModel, // dimensions: 768
       });
     } else {
-      embeddings.current = new CachedEmbeddings(embeddingsDocId, {
+      embeddings.current = new CachedEmbeddings(docId, {
         openAIApiKey: apiKey || env('OPENAI_API_KEY'),
-        // maxConcurrency: +env('MAX_CONCURRENCY', '5'),
         maxRetries: +env('MAX_RETRIES', '10'),
-        model: env('EMBEDDING_MODEL', 'text-embedding-3-small'), // dimensions: 1024,
+        model: embeddingModel, // dimensions: 1536 for OpenAI
       });
     }
 
     const db = await connect(saveDir);
-    if (!(await db.tableNames()).includes('vectors')) {
-      await db.createTable('vectors', [{ vector: Array(1536), text: 'Hello world', id: 1 }]);
+    if (!(await db.tableNames()).includes(tableName)) {
+      await db.createTable(tableName, [
+        {
+          vector: new Array(vectorDimensions).fill(0),
+          text: 'Hello world',
+          id: 1,
+        },
+      ]);
     }
-    const table = await db.openTable('vectors');
+    const table = await db.openTable(tableName);
 
     vectorStores[docId] = new LanceDB(embeddings.current, { table });
   }

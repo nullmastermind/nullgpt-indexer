@@ -1,14 +1,14 @@
+import { LanceDB } from '@langchain/community/vectorstores/lancedb';
 import { Request, Response } from 'express';
 import { encode } from 'gpt-3-encoder';
 import { Document } from 'langchain/document';
-import { FaissStore } from 'langchain/vectorstores/faiss';
 import { cloneDeep, forEach, map } from 'lodash';
 
 import { getVectorStore, scoreNormalizer2 } from '../utility/common';
 
 const queryByVectorStore = async (
   req: Request,
-  vectorStore: FaissStore,
+  vectorStore: LanceDB,
   strategy: 'document' | 'code',
 ) => {
   const {

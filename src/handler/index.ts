@@ -47,11 +47,8 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       const { loader, split } = await getLoader(filePath, processingStrategy);
       let documents: Document[];
       if (split) {
-        const splitter = getSplitter(fileExtension) as SummarySplitter;
-        const chunks = await splitter.splitText(
-          (await readFile(filePath)).toString('utf-8'),
-          filePath,
-        );
+        const splitter = getSplitter(filePath, fileExtension) as SummarySplitter;
+        const chunks = await splitter.splitText((await readFile(filePath)).toString('utf-8'));
 
         // console.log('------------------------------------');
         // console.log(chunks[0]);
@@ -126,7 +123,7 @@ const indexHandler = async (req: Request, res: Response) => {
 
   const vectorStoreDirectory = path.join(indexSaveDir, documentId);
   const hashCacheFile = path.join(vectorStoreDirectory, 'indexedHash.json');
-  const vectorStore = await getVectorStore(documentId, documentId, undefined, true);
+  const vectorStore = await getVectorStore(documentId, undefined, true);
   const processedFileCount = { current: 0 };
   let processedHashes: Record<string, boolean> = {};
   if (await pathExists(hashCacheFile)) {
