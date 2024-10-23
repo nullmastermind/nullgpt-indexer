@@ -59,30 +59,30 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 
   try {
     if (process.env.VOYAGE_RERANK_MODEL && process.env.VOYAGE_API_KEY) {
-      const documents = [];
-      let totalDocumentTokens = 0;
-      const maxRerankTokens = Math.max(
+      const documentsToRerank = [];
+      let accumulatedTokenCount = 0;
+      const maxTokensForReranking = Math.max(
         +env('VOYAGE_RERANK_MODEL_CONTEXT_LENGTH', '8000') - 512,
         512,
       );
 
       for (let i = 0; i < data.length; i++) {
-        const document = data[i];
-        const docTokens = encode(document[0].pageContent).length;
-        totalDocumentTokens += docTokens;
-        if (totalDocumentTokens <= maxRerankTokens) {
-          documents.push(document);
+        const currentDocument = data[i];
+        const currentDocumentTokens = encode(currentDocument[0].pageContent).length;
+        accumulatedTokenCount += currentDocumentTokens;
+        if (accumulatedTokenCount <= maxTokensForReranking) {
+          documentsToRerank.push(currentDocument);
         } else {
           break;
         }
       }
 
-      const { data: rerankResult } = await axios.post(
+      const { data: voyageRerankResponse } = await axios.post(
         'https://api.voyageai.com/v1/rerank',
         {
           query: query,
-          documents: documents.map((v) => {
-            return v[0].pageContent;
+          documents: documentsToRerank.map((document) => {
+            return document[0].pageContent;
           }),
           model: env('VOYAGE_RERANK_MODEL', 'rerank-2'),
           top_k: 20,
@@ -95,15 +95,15 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
         },
       );
 
-      const rerankedData = [];
+      const rerankedDocuments = [];
 
-      forEach(rerankResult.data, (item) => {
-        rerankedData.push(documents[item.index]);
+      forEach(voyageRerankResponse.data, (rerankResult) => {
+        rerankedDocuments.push(documentsToRerank[rerankResult.index]);
       });
 
-      if (rerankedData.length) {
+      if (rerankedDocuments.length) {
         data.length = 0;
-        data.push(...rerankedData);
+        data.push(...rerankedDocuments);
       } else {
         throw new Error('Reranking failed - no results returned from VOYAGE_RERANK model');
       }
