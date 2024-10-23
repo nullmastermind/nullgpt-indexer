@@ -3,7 +3,7 @@ import { Document } from '@langchain/core/documents';
 import Queue from 'better-queue';
 import { Request, Response } from 'express';
 import { pathExists, readFile, readJson, writeFile } from 'fs-extra';
-import { forEach, throttle } from 'lodash';
+import { forEach } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';

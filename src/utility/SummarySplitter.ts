@@ -1,64 +1,58 @@
+import { TokenTextSplitter } from '@langchain/textsplitters';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
-import { enqueueSummaryByStrategy } from './OpenAI';
-import Strategy from './Strategy';
-import { countTokens, createMd5, env } from './common';
+import { countTokens, env } from './common';
 
 export type SummaryStrategy = 'document' | 'code' | string;
 
 class SummarySplitter extends RecursiveCharacterTextSplitter {
   summaryStrategy: SummaryStrategy;
-  summaryStrategyKey: string;
 
   constructor(summaryStrategy: SummaryStrategy) {
     super();
 
     this.summaryStrategy = summaryStrategy;
-    this.summaryStrategyKey = createMd5(JSON.stringify(Strategy[summaryStrategy]));
   }
 
   async splitText(text: string): Promise<string[]> {
-    const strategyTokens = await countTokens(JSON.stringify(Strategy[this.summaryStrategy]));
-    const maxTokens = +env('SUMMARY_MAX_TOKENS', '16000') - strategyTokens;
-    const currentTokens = await countTokens(text);
+    // Get total tokens in text
+    const textTokens = await countTokens(text);
 
-    if (currentTokens > maxTokens) {
-      const parts = await super.splitText(text);
-      const requestTexts = [];
-      let requestText = '';
+    // Constants for token size constraints
+    const MIN_TOKENS = +env('CHUNK_MIN_TOKENS', '150');
+    const MAX_TOKENS = +env('CHUNK_MAX_TOKENS', '800');
+    const OPTIMAL_CHUNKS = +env('CHUNK_OPTIMAL_COUNT', '20');
+    const MIN_CHUNK_RATIO = +env('CHUNK_MIN_RATIO', '0.05'); // Minimum chunk size as % of total tokens
+    const MAX_CHUNK_RATIO = +env('CHUNK_MAX_RATIO', '0.2'); // Maximum chunk size as % of total tokens
 
-      for (const part of parts) {
-        const temp = [requestText, part].join('\n');
-        const tokens = await countTokens(temp);
+    // Calculate optimal chunk size based on text length
+    const tokensPerChunk = Math.ceil(textTokens / OPTIMAL_CHUNKS);
+    const ratioBasedTokens = Math.min(
+      Math.max(textTokens * MIN_CHUNK_RATIO, MIN_TOKENS),
+      textTokens * MAX_CHUNK_RATIO,
+    );
 
-        if (tokens >= maxTokens) {
-          requestTexts.push(requestText);
-          requestText = part;
-          continue;
-        }
+    // Use the most appropriate chunk size
+    const recommendedTokens = Math.min(
+      Math.max(tokensPerChunk, ratioBasedTokens, MIN_TOKENS),
+      MAX_TOKENS,
+    );
 
-        requestText = temp;
-      }
+    // Calculate overlap - larger for bigger chunks to maintain context
+    const overlapRatio = recommendedTokens > 400 ? 0.3 : 0.2;
+    const overlap = Math.ceil(recommendedTokens * overlapRatio);
 
-      if (requestText) {
-        requestTexts.push(requestText);
-      }
+    // console.log(
+    //   `Splitting text into chunks: ${textTokens} total tokens, ${overlap} token overlap, ${recommendedTokens} tokens per chunk`,
+    // );
 
-      const summaries = await Promise.all(
-        requestTexts.map((text) => enqueueSummaryByStrategy(text, this.summaryStrategy)),
-      );
-      const tempText = summaries.join('\n');
+    const splitter = new TokenTextSplitter({
+      encodingName: 'gpt2',
+      chunkOverlap: overlap,
+      chunkSize: recommendedTokens,
+    });
 
-      if ((await countTokens(tempText)) < maxTokens) {
-        text = tempText;
-      } else {
-        return summaries;
-      }
-    }
-
-    const summary = await enqueueSummaryByStrategy(text, this.summaryStrategy);
-
-    return [summary];
+    return splitter.splitText(text);
   }
 }
 
