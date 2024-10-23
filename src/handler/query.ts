@@ -9,7 +9,7 @@ import { getVectorStore } from '../utility/common';
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   const { query, ignoreHashes = [] } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const results = await vectorStore.similaritySearchWithScore(query, 100);
+  const results = await vectorStore.similaritySearchWithScore(query, 200);
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
 
@@ -50,15 +50,25 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 
     totalTokens.current += encodedContent.length;
 
-    if (data.length < 20) {
-      data.push(result);
-    } else {
-      break;
-    }
+    data.push(result);
   }
 
   // Sort by final score (lower is better)
   data.sort((a, b) => a[1] - b[1]);
+
+  try {
+    if (process.env.VOYAGE_RERANK_MODEL) {
+    }
+
+    throw new Error(
+      'VOYAGE_RERANK model not configured - please set VOYAGE_RERANK_MODEL environment variable to enable reranking',
+    );
+  } catch {
+    // Limit processing to first 20 items
+    const limitedData = data.slice(0, 20);
+    data.length = 0; // Clear the original array
+    data.push(...limitedData); // Push the limited items back in
+  }
 
   const dataBySource: Record<string, [Document, number][]> = {};
 
