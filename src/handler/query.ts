@@ -1,15 +1,16 @@
 import { FaissStore } from '@langchain/community/vectorstores/faiss';
+import axios from 'axios';
 import { Request, Response } from 'express';
 import { encode } from 'gpt-3-encoder';
 import { Document } from 'langchain/document';
 import { cloneDeep, forEach, map } from 'lodash';
 
-import { getVectorStore } from '../utility/common';
+import { env, getVectorStore } from '../utility/common';
 
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   const { query, ignoreHashes = [] } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const results = await vectorStore.similaritySearchWithScore(query, 100);
+  const results = await vectorStore.similaritySearchWithScore(query, 200);
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
 
@@ -50,15 +51,75 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 
     totalTokens.current += encodedContent.length;
 
-    if (data.length < 20) {
-      data.push(result);
-    } else {
-      break;
-    }
+    data.push(result);
   }
 
   // Sort by final score (lower is better)
   data.sort((a, b) => a[1] - b[1]);
+
+  try {
+    if (process.env.VOYAGE_RERANK_MODEL && process.env.VOYAGE_API_KEY) {
+      const documentsToRerank = [];
+      let accumulatedTokenCount = 0;
+      const maxTokensForReranking = Math.max(
+        +env('VOYAGE_RERANK_MODEL_CONTEXT_LENGTH', '8000') - 512,
+        512,
+      );
+
+      for (let i = 0; i < data.length; i++) {
+        const currentDocument = data[i];
+        const currentDocumentTokens = encode(currentDocument[0].pageContent).length;
+        accumulatedTokenCount += currentDocumentTokens;
+        if (accumulatedTokenCount <= maxTokensForReranking) {
+          documentsToRerank.push(currentDocument);
+        } else {
+          break;
+        }
+      }
+
+      const { data: voyageRerankResponse } = await axios.post(
+        'https://api.voyageai.com/v1/rerank',
+        {
+          query: query,
+          documents: documentsToRerank.map((document) => {
+            return document[0].pageContent;
+          }),
+          model: env('VOYAGE_RERANK_MODEL', 'rerank-2'),
+          top_k: 20,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.VOYAGE_API_KEY}`,
+          },
+        },
+      );
+
+      const rerankedDocuments = [];
+
+      forEach(voyageRerankResponse.data, (rerankResult) => {
+        rerankedDocuments.push(documentsToRerank[rerankResult.index]);
+      });
+
+      if (rerankedDocuments.length) {
+        data.length = 0;
+        data.push(...rerankedDocuments);
+      } else {
+        throw new Error('Reranking failed - no results returned from VOYAGE_RERANK model');
+      }
+    } else {
+      throw new Error(
+        'VOYAGE_RERANK model not configured - please set VOYAGE_RERANK_MODEL and VOYAGE_API_KEY environment variables',
+      );
+    }
+  } catch (error) {
+    console.log(error);
+
+    // Limit processing to first 20 items
+    const limitedData = data.slice(0, 20);
+    data.length = 0;
+    data.push(...limitedData);
+  }
 
   const dataBySource: Record<string, [Document, number][]> = {};
 
