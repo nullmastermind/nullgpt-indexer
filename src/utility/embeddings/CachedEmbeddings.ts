@@ -1,16 +1,17 @@
 import { OpenAIEmbeddings, OpenAIEmbeddingsParams } from '@langchain/openai';
+import { AzureOpenAIInput } from '@langchain/openai/dist/types';
 
-import { storage } from '../constant';
-import { createMd5 } from './common';
+import { storage } from '../../constant';
+import { createMd5 } from '../common';
 
-class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
+class CachedEmbeddings extends OpenAIEmbeddings {
   private readonly waitingProcesses: any[];
   private readonly docId: string;
 
   constructor(
     docId: string,
     fields?: Partial<OpenAIEmbeddingsParams> &
-      Partial<any> & {
+      Partial<AzureOpenAIInput> & {
         verbose?: boolean;
         openAIApiKey?: string;
       },
@@ -44,4 +45,4 @@ class CachedOpenAIEmbeddings extends OpenAIEmbeddings {
   }
 }
 
-export default CachedOpenAIEmbeddings;
+export default CachedEmbeddings;

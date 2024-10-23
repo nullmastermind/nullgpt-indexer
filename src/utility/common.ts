@@ -1,4 +1,5 @@
 import { FaissStore } from '@langchain/community/vectorstores/faiss';
+import { TextSplitter, TokenTextSplitter } from '@langchain/textsplitters';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
 import fg from 'fast-glob';
@@ -8,18 +9,14 @@ import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
-import {
-  RecursiveCharacterTextSplitter,
-  TextSplitter,
-  TokenTextSplitter,
-} from 'langchain/text_splitter';
 import { forEach } from 'lodash';
 import path, { join } from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
-import CachedOpenAIEmbeddings from './CachedOpenAIEmbeddings';
 import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
+import CachedEmbeddings from './embeddings/CachedEmbeddings';
+import CachedGoogleGenerativeAIEmbeddings from './embeddings/CachedGoogleGenerativeAIEmbeddings';
 
 function getGitFiles(cwd: string): Promise<string[]> {
   return new Promise(async (resolve, reject) => {
@@ -139,13 +136,7 @@ export async function getIgnores(dir: string): Promise<[string[], Record<string,
   return [keys, mapValue];
 }
 
-export function isOnlySpecial(content: string) {
-  const specialRegex = /^[^\p{L}\s]+$/u;
-
-  return specialRegex.test(content);
-}
-
-export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
+export const filterDocIndex = (doc: Document): boolean => {
   // filter hash
   if (
     !doc.pageContent.includes(' ') &&
@@ -156,31 +147,31 @@ export const filterDocIndex = (doc: Document<Record<string, any>>): boolean => {
     return false;
   }
 
-  if (['.cs'].includes(path.extname(doc.metadata.source))) {
-    // ignore c# import
-    const lines = doc.pageContent
-      .split('\n')
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0)
-      .filter((v) => !v.startsWith('using'));
-    if (lines.length === 0) {
-      console.log('ignored c# import');
-      return false;
-    }
-  } else if (['.js', '.jsx', '.ts', 'tsx'].includes(path.extname(doc.metadata.source))) {
-    // ignore js import
-    const lines = doc.pageContent
-      .split('\n')
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0)
-      .filter((v) => {
-        return !(v.startsWith('const') || v.startsWith('import'));
-      });
-    if (lines.length === 0) {
-      console.log('ignored js import');
-      return false;
-    }
-  }
+  // if (['.cs'].includes(path.extname(doc.metadata.source))) {
+  //   // ignore c# import
+  //   const lines = doc.pageContent
+  //     .split('\n')
+  //     .map((v) => v.trim())
+  //     .filter((v) => v.length > 0)
+  //     .filter((v) => !v.startsWith('using'));
+  //   if (lines.length === 0) {
+  //     console.log('ignored c# import');
+  //     return false;
+  //   }
+  // } else if (['.js', '.jsx', '.ts', 'tsx'].includes(path.extname(doc.metadata.source))) {
+  //   // ignore js import
+  //   const lines = doc.pageContent
+  //     .split('\n')
+  //     .map((v) => v.trim())
+  //     .filter((v) => v.length > 0)
+  //     .filter((v) => {
+  //       return !(v.startsWith('const') || v.startsWith('import'));
+  //     });
+  //   if (lines.length === 0) {
+  //     console.log('ignored js import');
+  //     return false;
+  //   }
+  // }
 
   // ignore if all lines contains special symbol only
   // const lines = doc.pageContent
@@ -204,12 +195,98 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
   return defaultValue;
 };
 
-export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSplitter => {
-  if (env('SUMMARY_MODEL_NAME')?.length > 0 && strategy === 'document') {
-    let summaryStrategy = 'code';
+export const getSplitter = (filePath: string, ext: string): TextSplitter | SummarySplitter => {
+  if (env('CONTEXTUAL_MODEL_NAME')?.length > 0) {
+    let summaryStrategy = 'document';
 
-    if (['.md', '.txt', '.mdx', '.html', '.htm', '.odt', '.xml', '.csv', '.rtf'].includes(ext)) {
-      summaryStrategy = 'document';
+    if (
+      [
+        '.js',
+        '.jsx',
+        '.ts',
+        '.tsx',
+        '.py',
+        '.java',
+        '.cpp',
+        '.c',
+        '.cs',
+        '.go',
+        '.rb',
+        '.php',
+        '.swift',
+        '.rs',
+        '.kt',
+        '.scala',
+        '.pl',
+        '.sh',
+        '.ps1',
+        '.bat',
+        '.cmd',
+        '.vb',
+        '.fs',
+        '.hs',
+        '.lua',
+        '.r',
+        '.m',
+        '.mm',
+        '.f90',
+        '.f95',
+        '.f03',
+        '.f08',
+        '.ada',
+        '.pas',
+        '.d',
+        '.erl',
+        '.ex',
+        '.exs',
+        '.elm',
+        '.clj',
+        '.coffee',
+        '.groovy',
+        '.jl',
+        '.ml',
+        '.nim',
+        '.rkt',
+        '.v',
+        '.zig',
+        '.au3',
+        '.sql',
+        '.yaml',
+        '.yml',
+        '.json',
+        '.xml',
+        '.html',
+        '.css',
+        '.scss',
+        '.sass',
+        '.less',
+        '.vue',
+        '.svelte',
+        '.dart',
+        '.gradle',
+        '.tf',
+        '.tfvars',
+        '.hcl',
+        '.dockerfile',
+        '.sol',
+        '.wasm',
+        '.wat',
+        '.asm',
+        '.s',
+        '.nasm',
+        '.mips',
+        '.arm',
+        '.cmake',
+        '.make',
+        '.toml',
+        '.ini',
+        '.cfg',
+        '.conf',
+        '.properties',
+        '.env',
+      ].includes(ext)
+    ) {
+      summaryStrategy = 'code';
     }
 
     // Strategy for special file extensions
@@ -217,80 +294,13 @@ export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSpl
       summaryStrategy = ext;
     }
 
-    return new SummarySplitter(summaryStrategy);
+    return new SummarySplitter(summaryStrategy, filePath);
   }
 
   if (!splitter[ext]) {
-    // [
-    //   'cpp',      'go',
-    //   'java',     'js',
-    //   'php',      'proto',
-    //   'python',   'rst',
-    //   'ruby',     'rust',
-    //   'scala',    'swift',
-    //   'markdown', 'latex',
-    //   'html',     'sol'
-    // ]
-    // const defaultChunkConfig = {
-    //   code: {
-    //     chunkSize: 128 * 10,
-    //     chunkOverlap: 128,
-    //   },
-    //   text: {
-    //     chunkSize: 128 * 20,
-    //     chunkOverlap: 128,
-    //   },
-    // };
-    // const lang: Record<
-    //   string,
-    //   {
-    //     lang: any;
-    //     chunkSize: number;
-    //     chunkOverlap: number;
-    //   }
-    // > = {
-    //   '.js': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.json': { lang: 'js', ...defaultChunkConfig.text },
-    //   '.jsx': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.ts': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.tsx': { lang: 'js', ...defaultChunkConfig.code },
-    //   '.go': { lang: 'go', ...defaultChunkConfig.code },
-    //   '.cpp': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.c': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.h': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.hpp': { lang: 'cpp', ...defaultChunkConfig.code },
-    //   '.cs': { lang: 'java', ...defaultChunkConfig.code },
-    //   '.py': { lang: 'python', ...defaultChunkConfig.code },
-    //   // '.md': { lang: 'markdown', ...defaultChunkConfig.text },
-    //   // '.csv': { lang: 'markdown', ...defaultChunkConfig.text },
-    //   '.html': { lang: 'html', ...defaultChunkConfig.text },
-    //   '.java': { lang: 'java', ...defaultChunkConfig.code },
-    //   '.rs': { lang: 'rust', ...defaultChunkConfig.code },
-    //   '.scala': { lang: 'scala', ...defaultChunkConfig.code },
-    //   '.tex': { lang: 'latex', ...defaultChunkConfig.text },
-    //   '.rb': { lang: 'ruby', ...defaultChunkConfig.code },
-    //   '.rst': { lang: 'rst', ...defaultChunkConfig.text },
-    //   '.proto': { lang: 'proto', ...defaultChunkConfig.text },
-    //   '.php': { lang: 'php', ...defaultChunkConfig.code },
-    //   '.sol': { lang: 'sol', ...defaultChunkConfig.code },
-    //   '.swift': { lang: 'swift', ...defaultChunkConfig.code }, // ".ipynb": { lang: "json", ...defaultChunkConfig.text },
-    // };
-    //
-    // if (lang[ext]) {
-    //   splitter[ext] = RecursiveCharacterTextSplitter.fromLanguage(lang[ext].lang, {
-    //     chunkSize: lang[ext].chunkSize,
-    //     chunkOverlap: lang[ext].chunkOverlap,
-    //   });
-    // } else {
-    //   splitter[ext] = new TokenTextSplitter({
-    //     encodingName: 'gpt2',
-    //     ...defaultChunkConfig.text,
-    //   });
-    // }
-
     // https://platform.openai.com/docs/assistants/tools/file-search/how-it-works
     splitter[ext] = new TokenTextSplitter({
-      encodingName: 'gpt2',
+      encodingName: 'cl100k_base',
       chunkOverlap: 400,
       chunkSize: 800,
     });
@@ -301,32 +311,42 @@ export const getSplitter = (ext: string, strategy: 'document' | 'code'): TextSpl
 
 export const getVectorStore = async (
   docId: string,
-  embeddingsDocId: string,
   apiKey?: string,
   forceNew?: boolean,
 ): Promise<FaissStore> => {
   if (!vectorStores[docId] || forceNew) {
     const saveDir = path.join(indexSaveDir, docId);
     const embeddings = { current: undefined as any };
+    const embeddingModel = env('EMBEDDING_MODEL', 'text-embedding-004');
+    // const tableName = createMd5(['vectors', embeddingModel]);
 
-    embeddings.current = new CachedOpenAIEmbeddings(embeddingsDocId, {
-      openAIApiKey: apiKey || env('OPENAI_API_KEY'),
-      maxConcurrency: +env('MAX_CONCURRENCY', '5'),
-      maxRetries: 10,
-      modelName: env('EMBEDDING_MODEL_NAME', 'text-embedding-3-small'), // dimensions: 1024,
-    });
+    // // Determine vector dimensions based on the model
+    // const vectorDimensions = +env(
+    //   'EMBEDDING_DIMENSIONS',
+    //   env('EMBEDDINGS') === 'google' ? '768' : '1536',
+    // );
 
-    if (await pathExists(path.join(saveDir, 'docstore.json'))) {
-      vectorStores[docId] = await FaissStore.load(
-        path.join(indexSaveDir, docId),
-        embeddings.current,
-      );
+    if (env('EMBEDDINGS') === 'google') {
+      embeddings.current = new CachedGoogleGenerativeAIEmbeddings(docId, {
+        apiKey: env('GOOGLE_API_KEY'),
+        maxRetries: +env('MAX_RETRIES', '10'),
+        model: embeddingModel, // dimensions: 768
+      });
     } else {
-      vectorStores[docId] = await FaissStore.fromTexts(
-        ['Hello world!'],
-        [{ id: 1 }],
-        embeddings.current,
-      );
+      embeddings.current = new CachedEmbeddings(docId, {
+        openAIApiKey: apiKey || env('OPENAI_API_KEY'),
+        maxRetries: +env('MAX_RETRIES', '10'),
+        model: embeddingModel, // dimensions: 1536 for OpenAI
+      });
+    }
+
+    try {
+      if (forceNew) {
+        throw new Error('Force new vector store creation requested');
+      }
+      vectorStores[docId] = await FaissStore.load(saveDir, embeddings.current);
+    } catch {
+      vectorStores[docId] = new FaissStore(embeddings.current, {});
     }
   }
 
@@ -342,7 +362,8 @@ export async function isDirectory(path: string): Promise<boolean> {
   }
 }
 
-export function createMd5(content: string): string {
+export function createMd5(content: any): string {
+  content = JSON.stringify(content);
   return createHash('md5').update(content).digest('hex');
 }
 
@@ -407,22 +428,24 @@ export const getLoader = async (
   loader: BaseDocumentLoader;
   split: boolean;
 }> => {
-  if (filePath.endsWith('.csv')) {
-    return {
-      loader: new TextLoader(filePath),
-      split: true,
-    };
-  }
-
-  if (filePath.endsWith('.txt')) {
-    return {
-      loader: new TextLoader(filePath),
-      split: true,
-    };
-  }
+  // if (filePath.endsWith('.csv')) {
+  //   return {
+  //     loader: new TextLoader(filePath),
+  //     split: true,
+  //   };
+  // }
+  //
+  // if (filePath.endsWith('.txt')) {
+  //   return {
+  //     loader: new TextLoader(filePath),
+  //     split: true,
+  //   };
+  // }
 
   return {
     loader: new TextLoader(filePath),
     split: true,
   };
 };
+
+export const non = () => {};

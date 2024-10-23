@@ -1,5 +1,5 @@
-import { TextSplitter } from 'langchain/text_splitter';
-import { FaissStore } from 'langchain/vectorstores/faiss';
+import { FaissStore } from '@langchain/community/vectorstores/faiss';
+import { TextSplitter } from '@langchain/textsplitters';
 import path from 'path';
 
 import Storage from './utility/Storage';
