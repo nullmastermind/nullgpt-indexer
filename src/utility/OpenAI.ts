@@ -56,6 +56,8 @@ Please give a short succinct context to situate this chunk within the overall do
       return cached;
     }
 
+    console.log(`Processing new chunk for file: ${filePath}`);
+
     const completion = await openai.chat.completions.create({
       messages,
       model,
