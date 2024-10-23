@@ -316,7 +316,7 @@ export const getVectorStore = async (
     embeddings.current = new CachedEmbeddings(embeddingsDocId, {
       openAIApiKey: apiKey || env('OPENAI_API_KEY'),
       maxConcurrency: +env('MAX_CONCURRENCY', '5'),
-      maxRetries: 10,
+      maxRetries: +env('MAX_RETRIES', '10'),
       modelName: env('EMBEDDING_MODEL', 'text-embedding-3-small'), // dimensions: 1024,
     });
 
