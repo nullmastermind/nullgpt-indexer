@@ -7,6 +7,7 @@ import { forEach } from 'lodash';
 import path from 'path';
 
 import { docsDir, indexSaveDir, storage, vectorStores } from '../constant';
+import { addChunkContext } from '../utility/OpenAI';
 import SummarySplitter from '../utility/SummarySplitter';
 import {
   createMd5,
@@ -45,9 +46,11 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       const fileExtension = path.extname(filePath);
       const { loader, split } = await getLoader(filePath, processingStrategy);
       let documents: Document[];
+      let fileContent: string;
       if (split) {
+        fileContent = (await readFile(filePath)).toString('utf-8');
         const splitter = getSplitter(filePath, fileExtension) as SummarySplitter;
-        const chunks = await splitter.splitText((await readFile(filePath)).toString('utf-8'));
+        const chunks = await splitter.splitText(fileContent);
 
         // console.log('------------------------------------');
         // console.log(chunks[0]);
@@ -65,24 +68,40 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       const isNewDocument = !processedHashes[contentHash];
 
       await vectorStore.addDocuments(
-        documents
-          .map((document) => {
-            // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
-            //             document.pageContent = `File Location: ${documentPath}
-            // -------------------
-            //
-            // ${document.pageContent}`;
+        await Promise.all(
+          documents
+            .map((document) => {
+              // document.pageContent = `${processingStrategy === 'document' ? 'DOCUMENT NAME' : 'REFERENCE CODE'}: ${documentPath}\n\n${document.pageContent}`;
+              //             document.pageContent = `File Location: ${documentPath}
+              // -------------------
+              //
+              // ${document.pageContent}`;
 
-            document.metadata.source = filePath.split('/').join(path.sep);
-            document.metadata['md5'] = contentHash;
-            document.metadata['hash'] = createMd5(document.pageContent);
+              document.metadata.source = filePath.split('/').join(path.sep);
+              document.metadata['md5'] = contentHash;
+              document.metadata['hash'] = createMd5(document.pageContent);
 
-            return document;
-          })
-          .map((document) => {
-            temporaryProcessedHashes[document.metadata['hash']] = true;
-            return document;
-          }),
+              return document;
+            })
+            .map((document) => {
+              temporaryProcessedHashes[document.metadata['hash']] = true;
+              return document;
+            })
+            .map(async (document) => {
+              if (split) {
+                const context = await addChunkContext(
+                  filePath,
+                  fileContent,
+                  document.pageContent,
+                  processingStrategy,
+                );
+
+                document.pageContent = `${context}\n---\n${document.pageContent}`;
+              }
+
+              return document;
+            }),
+        ),
       );
 
       processedHashes[contentHash] = true;

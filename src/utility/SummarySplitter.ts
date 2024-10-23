@@ -1,20 +1,25 @@
 import { TokenTextSplitter } from '@langchain/textsplitters';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
-import { addChunkContext } from './OpenAI';
 import { countTokens, env } from './common';
 
 export type SummaryStrategy = 'document' | 'code' | string;
 
-class SummarySplitter extends RecursiveCharacterTextSplitter {
+class SummarySplitter {
   summaryStrategy: SummaryStrategy;
   filePath: string;
+  splitter: TokenTextSplitter;
 
   constructor(summaryStrategy: SummaryStrategy, filePath: string) {
-    super();
-
     this.summaryStrategy = summaryStrategy;
     this.filePath = filePath;
+  }
+
+  async createDocuments(
+    texts: string[],
+    metadatas?: Record<string, any>[],
+    chunkHeaderOptions?: any,
+  ) {
+    return this.splitter.createDocuments(texts, metadatas, chunkHeaderOptions);
   }
 
   async splitText(text: string): Promise<string[]> {
@@ -49,30 +54,32 @@ class SummarySplitter extends RecursiveCharacterTextSplitter {
       `Splitting text into chunks: ${textTokens} total tokens, ${overlap} token overlap, ${recommendedTokens} tokens per chunk`,
     );
 
-    const splitter = new TokenTextSplitter({
+    this.splitter = new TokenTextSplitter({
       encodingName: 'cl100k_base',
       chunkOverlap: overlap,
       chunkSize: recommendedTokens,
     });
 
-    const chunks = await splitter.splitText(text);
+    return this.splitter.splitText(text);
 
-    return Promise.all(
-      chunks.map(async (chunk) => {
-        const context = await addChunkContext(this.filePath, text, chunk, this.summaryStrategy);
-
-        // console.log('---------');
-        // console.log('context:', context);
-        // console.log('chunk:', chunk);
-        // console.log('---------');
-
-        // if (this.summaryStrategy === 'code') {
-        //   return `### Context\n${context}\n\n### Chunk content\n\`\`\`\n${chunk}\n\`\`\``;
-        // }
-
-        return `${context}\n---\n${chunk}`;
-      }),
-    );
+    // const chunks = await this.splitter.splitText(text);
+    //
+    // return Promise.all(
+    //   chunks.map(async (chunk) => {
+    //     const context = await addChunkContext(this.filePath, text, chunk, this.summaryStrategy);
+    //
+    //     // console.log('---------');
+    //     // console.log('context:', context);
+    //     // console.log('chunk:', chunk);
+    //     // console.log('---------');
+    //
+    //     // if (this.summaryStrategy === 'code') {
+    //     //   return `### Context\n${context}\n\n### Chunk content\n\`\`\`\n${chunk}\n\`\`\``;
+    //     // }
+    //
+    //     return `${context}\n---\n${chunk}`;
+    //   }),
+    // );
   }
 }
 

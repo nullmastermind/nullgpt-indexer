@@ -195,7 +195,7 @@ export const env = (key: string, defaultValue?: string): string | undefined => {
   return defaultValue;
 };
 
-export const getSplitter = (filePath: string, ext: string): TextSplitter => {
+export const getSplitter = (filePath: string, ext: string): TextSplitter | SummarySplitter => {
   if (env('CONTEXTUAL_MODEL_NAME')?.length > 0) {
     let summaryStrategy = 'document';
 
