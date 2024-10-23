@@ -9,28 +9,56 @@ import { getVectorStore } from '../utility/common';
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   const { query, ignoreHashes = [] } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const results = await vectorStore.similaritySearchWithScore(query, 20);
+  const results = await vectorStore.similaritySearchWithScore(query, 100);
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
 
-  forEach(results, (r) => {
-    r[1] = 0.0;
+  // Normalize similarity scores to 0-1 range
+  const scores = results.map((r) => r[1]);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const scoreRange = maxScore - minScore;
 
-    if (ignoredHashesSet.has(r[0].metadata.hash)) {
-      return;
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+
+    if (ignoredHashesSet.has(result[0].metadata.hash)) {
+      continue;
     }
 
-    const doc = r[0];
-    const encoded = encode(doc.pageContent);
+    const document = result[0];
 
-    totalTokens.current += encoded.length;
+    // Normalize the similarity score (lower is better)
+    const normalizedScore = scoreRange ? (result[1] - minScore) / scoreRange : 0;
 
-    data.push(r);
-  });
+    // Calculate content length score (prefer shorter content)
+    const contentLength = document.pageContent.length;
+    const lengthScore = Math.min(contentLength / 1000, 1); // Normalize to 0-1
 
-  data.sort((a, b) => {
-    return a[1] - b[1];
-  });
+    // Calculate token density score
+    const encodedContent = encode(result[0].pageContent);
+    const tokenDensity = encodedContent.length / contentLength;
+    const densityScore = Math.min(tokenDensity * 2, 1); // Normalize to 0-1
+
+    // Combine scores with weights
+    result[1] =
+      normalizedScore * 0.6 + // Similarity importance
+      lengthScore * 0.3 + // Length importance
+      densityScore * 0.1; // Token density importance;
+
+    // console.log('normalizedScore', normalizedScore, finalScore);
+
+    totalTokens.current += encodedContent.length;
+
+    if (data.length < 20) {
+      data.push(result);
+    } else {
+      break;
+    }
+  }
+
+  // Sort by final score (lower is better)
+  data.sort((a, b) => a[1] - b[1]);
 
   const dataBySource: Record<string, [Document, number][]> = {};
 
