@@ -55,7 +55,12 @@ OPENAI_API_KEY=your-openai-api-key
 
 # Optional Configurations
 CONTEXTUAL_API_KEY=your-contextual-api-key
-CONTEXTUAL_MODEL_NAME=gpt-4-mini
+CONTEXTUAL_MODEL_NAME=gpt-4o-mini
+
+# Rerank Configuration (Optional)
+VOYAGE_API_KEY=your-voyage-api-key          # API key for Voyage reranking
+VOYAGE_RERANK_MODEL=rerank-2                # Rerank model to use
+VOYAGE_RERANK_MODEL_CONTEXT_LENGTH=16000    # Maximum context length for reranking
 ```
 
 ## Usage
