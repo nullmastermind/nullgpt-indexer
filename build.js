@@ -21,7 +21,7 @@ async function main() {
   const outputName = `dist/nullgpt-indexer-${platform}-${arch}`;
 
   await compile({
-    input: "build/_exec.js",
+    input: "build/app.js",
     output: outputName,
     resources: [
       // "node_modules/classic-level/prebuilds/**",
