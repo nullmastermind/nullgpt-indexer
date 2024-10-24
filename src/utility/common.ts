@@ -137,6 +137,8 @@ export async function getIgnores(dir: string): Promise<[string[], Record<string,
 }
 
 export const filterDocIndex = (doc: Document): boolean => {
+  if (!doc.pageContent || !doc.pageContent.trim()) return false;
+
   // filter hash
   if (
     !doc.pageContent.includes(' ') &&
