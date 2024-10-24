@@ -12,6 +12,12 @@ A powerful document indexing and querying service that supports multiple AI prov
 - REST API endpoints for document management
 - Git integration for document updates
 
+## Demo
+
+Watch our demo video to see NullGPT Indexer in action:
+
+[![NullGPT Indexer Demo](https://img.youtube.com/vi/oRtJhmcd7o4/0.jpg)](https://www.youtube.com/watch?v=oRtJhmcd7o4)
+
 ## Prerequisites
 
 - Node.js 18.16.1 or higher
