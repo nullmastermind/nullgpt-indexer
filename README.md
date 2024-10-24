@@ -34,7 +34,7 @@ cd nullgpt-indexer
 
 2. Install dependencies:
 ```bash
-yarn install
+npm i --force
 ```
 
 3. Create environment configuration:

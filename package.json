@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rimraf ./build && tsc",
     "format": "prettier --write src/**/*.ts",
-    "package": "yarn build && rimraf ./dist && node build.js",
+    "package": "bun run build && rimraf ./dist && node build.js",
     "start": "node ./build/server.js",
     "start:dev": "bun ./src/server.ts"
   },
@@ -25,6 +25,7 @@
     "delay": "^6.0.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "faiss-node": "^0.5.1",
     "fast-glob": "^3.2.12",
     "fs-extra": "^11.1.1",
     "gpt-3-encoder": "^1.1.4",
@@ -33,6 +34,7 @@
     "level": "^8.0.0",
     "limiter": "^2.1.0",
     "lodash": "^4.17.21",
+    "nexe": "^4.0.0-rc.6",
     "openai": "^4.28.0",
     "p-limit": "^6.1.0",
     "ts-retry-promise": "^0.8.1",
@@ -54,6 +56,5 @@
     "prettier-plugin-sort-json": "^3.1.0",
     "rimraf": "^5.0.1",
     "typescript": "^5.1.5"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  }
 }

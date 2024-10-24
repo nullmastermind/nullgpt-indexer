@@ -348,7 +348,7 @@ export const getVectorStore = async (
       }
       vectorStores[docId] = await FaissStore.load(saveDir, embeddings.current);
     } catch {
-      vectorStores[docId] = new FaissStore(embeddings.current, {});
+      vectorStores[docId] = await FaissStore.fromTexts(['🐧'], [{ id: 1 }], embeddings.current);
     }
   }
 
