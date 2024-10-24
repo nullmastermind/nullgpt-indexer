@@ -8,9 +8,13 @@ import { cloneDeep, forEach, map } from 'lodash';
 import { env, getVectorStore } from '../utility/common';
 
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
-  const { query, ignoreHashes = [] } = req.body;
+  const { query, ignoreHashes = [], k = 20, minScore: rerankMinScore = 0.3 } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const results = await vectorStore.similaritySearchWithScore(query, 100 + ignoreHashes.length);
+  const maxScanLimit = Math.max(k, 100);
+  const results = await vectorStore.similaritySearchWithScore(
+    query,
+    maxScanLimit + ignoreHashes.length,
+  );
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
 
@@ -85,7 +89,7 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
             return document[0].pageContent;
           }),
           model: env('VOYAGE_RERANK_MODEL', 'rerank-2'),
-          top_k: 20,
+          top_k: k,
         },
         {
           headers: {
@@ -98,7 +102,9 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
       const rerankedDocuments = [];
 
       forEach(voyageRerankResponse.data, (rerankResult) => {
-        rerankedDocuments.push(documentsToRerank[rerankResult.index]);
+        if (rerankResult.relevance_score >= rerankMinScore) {
+          rerankedDocuments.push(documentsToRerank[rerankResult.index]);
+        }
       });
 
       if (rerankedDocuments.length) {
@@ -115,8 +121,8 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   } catch (error) {
     console.log(error);
 
-    // Limit processing to first 20 items
-    const limitedData = data.slice(0, 20);
+    // Limit processing to first k items
+    const limitedData = data.slice(0, k);
     data.length = 0;
     data.push(...limitedData);
   }
