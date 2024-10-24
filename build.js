@@ -1,18 +1,23 @@
-const { compile } = require("nexe");
-const fg = require("fast-glob");
-const { forEach } = require("lodash");
-const fs = require("fs");
-const os = require("os");
+const { compile } = require('nexe');
+const fg = require('fast-glob');
+const { forEach } = require('lodash');
+const fs = require('fs');
+const os = require('os');
 
-const prebuilds = ["node_modules/classic-level/prebuilds/**"];
+const prebuilds = [
+  'node_modules/classic-level/prebuilds/**',
+  'node_modules/faiss-node/**',
+  'node_modules/bindings/**',
+  'node_modules/file-uri-to-path/**',
+];
 const prebuildFiles = fg.sync(prebuilds);
 const prebuildsJson = {};
 
 forEach(prebuildFiles, (f) => {
-  prebuildsJson[f] = fs.readFileSync(f, "hex");
+  prebuildsJson[f] = fs.readFileSync(f, 'hex');
 });
 
-fs.writeFileSync("prebuilds.json", JSON.stringify(prebuildsJson));
+fs.writeFileSync('prebuilds.json', JSON.stringify(prebuildsJson));
 
 async function main() {
   const platform = os.platform();
@@ -21,16 +26,16 @@ async function main() {
   const outputName = `dist/nullgpt-indexer-${platform}-${arch}`;
 
   await compile({
-    input: "build/app.js",
+    input: 'build/app.js',
     output: outputName,
     resources: [
       // "node_modules/classic-level/prebuilds/**",
-      "node_modules/gpt-3-encoder/**",
-      "prebuilds.json",
+      'node_modules/gpt-3-encoder/**',
+      'prebuilds.json',
     ],
-    vcBuild: ["nosign", "release", "openssl-no-asm"],
+    vcBuild: ['nosign', 'release', 'openssl-no-asm'],
     build: true,
-    ico: "bot.ico",
+    ico: 'bot.ico',
   });
 }
 
