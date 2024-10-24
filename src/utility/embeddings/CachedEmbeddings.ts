@@ -1,11 +1,17 @@
 import { OpenAIEmbeddings, OpenAIEmbeddingsParams } from '@langchain/openai';
 import { AzureOpenAIInput } from '@langchain/openai/dist/types';
+import { RateLimiter } from 'limiter';
+import { retry } from 'ts-retry-promise';
 
 import { storage } from '../../constant';
 import { createMd5 } from '../common';
 
+const limiter = new RateLimiter({
+  interval: 'second',
+  tokensPerInterval: +(process.env.EMBEDDING_RATE_LIMIT || '45'),
+});
+
 class CachedEmbeddings extends OpenAIEmbeddings {
-  private readonly waitingProcesses: any[];
   private readonly docId: string;
 
   constructor(
@@ -18,30 +24,44 @@ class CachedEmbeddings extends OpenAIEmbeddings {
     configuration?: any,
   ) {
     super(fields, configuration);
-    this.waitingProcesses = [];
     this.docId = docId;
   }
 
+  // noinspection DuplicatedCode
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    const key = [this.modelName, createMd5(texts.join(''))].join('_');
-    const dbVal = await storage.get(key);
+    const cacheKey = createMd5([texts, this.modelName]);
+    const cachedEmbeddings = await storage.get(cacheKey);
 
-    this.waitingProcesses.push(storage.set(`${key}:updatedAt`, new Date()));
-    this.waitingProcesses.push(storage.set(`${key}:doc_id`, this.docId));
+    await Promise.all([
+      storage.set(`${cacheKey}:updatedAt`, new Date()),
+      storage.set(`${cacheKey}:doc_id`, this.docId),
+    ]);
 
-    if (dbVal !== undefined) {
-      return dbVal;
+    if (cachedEmbeddings !== undefined) {
+      return cachedEmbeddings;
     }
 
-    const result = await super.embedDocuments(texts);
+    if (!texts.length) {
+      throw new Error('Cannot embed empty text array');
+    }
 
-    await storage.set(key, result);
+    const embeddings = await retry(
+      async () => {
+        await limiter.removeTokens(1);
+        return super.embedDocuments(texts);
+      },
+      {
+        retries: 10,
+        delay: 10000,
+        timeout: 'INFINITELY',
+      },
+    );
 
-    return result;
-  }
+    if (!(Array.isArray(embeddings) && embeddings.length === 0)) {
+      await storage.set(cacheKey, embeddings);
+    }
 
-  async ensureAllDataSaved() {
-    await Promise.all(this.waitingProcesses);
+    return embeddings;
   }
 }
 
