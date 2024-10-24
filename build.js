@@ -3,6 +3,7 @@ const fg = require('fast-glob');
 const { forEach } = require('lodash');
 const fs = require('fs');
 const os = require('os');
+const { copy } = require('fs-extra');
 
 const prebuilds = [
   'node_modules/classic-level/prebuilds/**',
@@ -37,6 +38,8 @@ async function main() {
     build: true,
     ico: 'bot.ico',
   });
+
+  await copy('.env.example', 'dist/.env');
 }
 
 main().finally();
