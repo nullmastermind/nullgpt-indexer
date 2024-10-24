@@ -10,7 +10,7 @@ import { env, getVectorStore } from '../utility/common';
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   const { query, ignoreHashes = [] } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const results = await vectorStore.similaritySearchWithScore(query, 200);
+  const results = await vectorStore.similaritySearchWithScore(query, 100 + ignoreHashes.length);
   const data: [Document, number][] = [];
   const totalTokens = { current: 0 };
 
