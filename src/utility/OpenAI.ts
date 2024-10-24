@@ -40,9 +40,7 @@ This chunk...
       },
       {
         role: 'user',
-        content: `File Name: ${path.basename(filePath)}
-
-<document>
+        content: `<document filename="${path.basename(filePath)}">
 ${content}
 </document>
 
@@ -69,7 +67,21 @@ Please give a short succinct context to situate this chunk within the overall do
       model,
       temperature: 0,
     });
-    const summarized = completion.choices?.[0]?.message?.content || null;
+    const summarized = (() => {
+      const response = completion.choices?.[0]?.message?.content;
+      if (!response) return null;
+
+      const startTag = '<response_boilerplate>';
+      const endTag = '</response_boilerplate>';
+
+      const startIndex = response.indexOf(startTag);
+      if (startIndex === -1) return response;
+
+      const endIndex = response.indexOf(endTag);
+      if (endIndex === -1) return response.slice(startIndex + startTag.length);
+
+      return response.slice(startIndex + startTag.length, endIndex);
+    })()?.trim();
 
     if (summarized) {
       await summaryStorage.set(key, summarized);
