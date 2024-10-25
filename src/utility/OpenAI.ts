@@ -28,7 +28,43 @@ export const addChunkContext = retryDecorator(
     await limiter.removeTokens(1);
 
     const contextualMaxTokens = +env('CONTEXTUAL_MAX_TOKENS', '16000');
+    const chunkMaxTokens = +env('CHUNK_MAX_TOKENS', '800');
     const contentTokens = countTokens(content);
+
+    if (contentTokens > contextualMaxTokens) {
+      const chunkIndex = content.indexOf(chunk);
+
+      // Calculate initial sections (10% - 80% - 10%)
+      const startSectionEndIndex = Math.min(Math.floor(content.length * 0.1), chunk.length);
+      const startSection = content.slice(0, startSectionEndIndex);
+      const endSectionStartIndex = Math.max(
+        Math.floor(content.length * 0.9),
+        content.length - chunk.length,
+      );
+      const endSection = content.slice(endSectionStartIndex);
+      const estimatedOffset = Math.floor(chunk.length * (contextualMaxTokens / chunkMaxTokens / 2));
+
+      // Calculate the middle section around the chunk
+      const middleStartIndex = Math.max(chunkIndex - estimatedOffset, startSectionEndIndex);
+      const middleEndIndex = Math.min(
+        chunkIndex + chunk.length + estimatedOffset,
+        endSectionStartIndex,
+      );
+      let middleSection = content.slice(middleStartIndex, middleEndIndex);
+
+      // Combine sections
+      content = startSection + middleSection + endSection;
+
+      console.log(
+        'content.length',
+        countTokens(content),
+        startSection.length,
+        middleSection.length,
+        endSection.length,
+        middleSection.includes(chunk),
+        content.indexOf(chunk) - chunk.length / 2,
+      );
+    }
 
     const messages: any[] = [
       {
