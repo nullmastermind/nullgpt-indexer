@@ -33,6 +33,8 @@ export const addChunkContext = retryDecorator(
     if (contentTokens > contextualMaxTokens) {
       const chunkIndex = content.indexOf(chunk);
 
+      console.log('chunkIndex:', chunkIndex);
+
       // Calculate initial sections (10% - 80% - 10%)
       const startSectionEndIndex = Math.min(Math.floor(content.length * 0.1), chunk.length);
       const startSection = content.slice(0, startSectionEndIndex);
@@ -41,9 +43,10 @@ export const addChunkContext = retryDecorator(
         content.length - chunk.length,
       );
       const endSection = content.slice(endSectionStartIndex);
-      const estimatedOffset = Math.floor(
-        chunk.length * (contextualMaxTokens / countTokens(chunk) / 2),
-      );
+      // const estimatedOffset = Math.floor(
+      //   chunk.length * (contextualMaxTokens / countTokens(chunk) / 2),
+      // );
+      const estimatedOffset = Math.floor(chunk.length * 3);
 
       // Calculate the middle section around the chunk
       const middleStartIndex = Math.max(chunkIndex - estimatedOffset, startSectionEndIndex);
@@ -55,6 +58,8 @@ export const addChunkContext = retryDecorator(
 
       // Combine sections
       content = startSection + middleSection + endSection;
+
+      console.log('chunkIndex:', chunkIndex, 'Done');
     }
 
     const messages: any[] = [
@@ -114,9 +119,13 @@ Please give a short succinct context to situate this chunk within the overall do
     })()?.trim();
 
     if (summarized) {
+      console.log('summarized:', summarized);
+
       await summaryStorage.set(key, summarized);
       return summarized;
     }
+
+    console.error('Failed to generate contextual summary - no valid response from API');
 
     throw {
       message: 'Failed to generate contextual summary - no valid response from API',
