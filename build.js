@@ -31,7 +31,7 @@ async function main() {
     output: outputName,
     resources: [
       // "node_modules/classic-level/prebuilds/**",
-      'node_modules/gpt-3-encoder/**',
+      // 'node_modules/gpt-3-encoder/**',
       'prebuilds.json',
     ],
     vcBuild: ['nosign', 'release', 'openssl-no-asm'],
