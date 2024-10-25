@@ -28,7 +28,6 @@ export const addChunkContext = retryDecorator(
     await limiter.removeTokens(1);
 
     const contextualMaxTokens = +env('CONTEXTUAL_MAX_TOKENS', '16000');
-    const chunkMaxTokens = +env('CHUNK_MAX_TOKENS', '800');
     const contentTokens = countTokens(content);
 
     if (contentTokens > contextualMaxTokens) {
@@ -42,7 +41,9 @@ export const addChunkContext = retryDecorator(
         content.length - chunk.length,
       );
       const endSection = content.slice(endSectionStartIndex);
-      const estimatedOffset = Math.floor(chunk.length * (contextualMaxTokens / chunkMaxTokens / 2));
+      const estimatedOffset = Math.floor(
+        chunk.length * (contextualMaxTokens / countTokens(chunk) / 2),
+      );
 
       // Calculate the middle section around the chunk
       const middleStartIndex = Math.max(chunkIndex - estimatedOffset, startSectionEndIndex);
