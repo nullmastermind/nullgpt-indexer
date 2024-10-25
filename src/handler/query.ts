@@ -1,11 +1,10 @@
 import { FaissStore } from '@langchain/community/vectorstores/faiss';
 import axios from 'axios';
 import { Request, Response } from 'express';
-import { encode } from 'gpt-3-encoder';
 import { Document } from 'langchain/document';
 import { cloneDeep, forEach, map } from 'lodash';
 
-import { env, getVectorStore } from '../utility/common';
+import { countTokens, env, getVectorStore } from '../utility/common';
 
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   const { query, ignoreHashes = [], k = 20, minScore: rerankMinScore = 0.3 } = req.body;
@@ -41,8 +40,8 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
     const lengthScore = Math.min(contentLength / 1000, 1); // Normalize to 0-1
 
     // Calculate token density score
-    const encodedContent = encode(result[0].pageContent);
-    const tokenDensity = encodedContent.length / contentLength;
+    const tokenCount = countTokens(result[0].pageContent);
+    const tokenDensity = tokenCount / contentLength;
     const densityScore = Math.min(tokenDensity * 2, 1); // Normalize to 0-1
 
     // Combine scores with weights
@@ -53,7 +52,7 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 
     // console.log('normalizedScore', normalizedScore, finalScore);
 
-    totalTokens.current += encodedContent.length;
+    totalTokens.current += tokenCount;
 
     data.push(result);
   }
@@ -72,7 +71,7 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 
       for (let i = 0; i < data.length; i++) {
         const currentDocument = data[i];
-        const currentDocumentTokens = encode(currentDocument[0].pageContent).length;
+        const currentDocumentTokens = countTokens(currentDocument[0].pageContent);
         accumulatedTokenCount += currentDocumentTokens;
         if (accumulatedTokenCount <= maxTokensForReranking) {
           documentsToRerank.push(currentDocument);

@@ -5,7 +5,7 @@ import { retryDecorator } from 'ts-retry-promise';
 
 import { summaryStorage } from '../constant';
 import { SummaryStrategy } from './SummarySplitter';
-import { createMd5, env } from './common';
+import { countTokens, createMd5, env } from './common';
 
 const limiter = new RateLimiter({
   interval: 'second',
@@ -26,6 +26,9 @@ export const addChunkContext = retryDecorator(
     strategy: SummaryStrategy,
   ): Promise<string | null> => {
     await limiter.removeTokens(1);
+
+    const contextualMaxTokens = +env('CONTEXTUAL_MAX_TOKENS', '16000');
+    const contentTokens = countTokens(content);
 
     const messages: any[] = [
       {

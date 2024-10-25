@@ -25,7 +25,7 @@ class SummarySplitter {
 
   async splitText(text: string): Promise<string[]> {
     // Get total tokens in text
-    const textTokens = await countTokens(text);
+    const textTokens = countTokens(text);
 
     if (textTokens === 0) return [];
 

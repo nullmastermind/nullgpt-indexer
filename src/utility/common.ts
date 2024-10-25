@@ -5,6 +5,7 @@ import { createHash } from 'crypto';
 import fg from 'fast-glob';
 import * as fs from 'fs-extra';
 import { pathExists } from 'fs-extra';
+import { encode } from 'gpt-tokenizer';
 import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
@@ -400,10 +401,8 @@ export function gitAddSafeDir(cwd: string): Promise<string> {
   });
 }
 
-export const countTokens = async (content: string) => {
+export const countTokens = (content: string) => {
   try {
-    const { encode } = await import('gpt-tokenizer');
-
     return encode(content).length;
   } catch {
     return 0;
