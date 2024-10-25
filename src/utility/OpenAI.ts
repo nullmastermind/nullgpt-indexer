@@ -54,16 +54,6 @@ export const addChunkContext = retryDecorator(
 
       // Combine sections
       content = startSection + middleSection + endSection;
-
-      console.log(
-        'content.length',
-        countTokens(content),
-        startSection.length,
-        middleSection.length,
-        endSection.length,
-        middleSection.includes(chunk),
-        content.indexOf(chunk) - chunk.length / 2,
-      );
     }
 
     const messages: any[] = [
