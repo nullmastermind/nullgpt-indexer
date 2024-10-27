@@ -158,8 +158,8 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 };
 
 const queryHandler = async (req: Request, res: Response) => {
-  const { doc_id: documentId, api_key: apiKey, query = '' } = req.body;
-  const documentVectorStore = await getVectorStore(documentId, documentId, apiKey);
+  const { doc_id: documentId, query = '' } = req.body;
+  const documentVectorStore = await getVectorStore(documentId, undefined);
 
   const vectorQueries: any[] = [];
 
