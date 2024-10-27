@@ -30,37 +30,37 @@ export const addChunkContext = retryDecorator(
     const contextualMaxTokens = +env('CONTEXTUAL_MAX_TOKENS', '16000');
     const contentTokens = countTokens(content);
 
-    if (contentTokens > contextualMaxTokens) {
-      const chunkIndex = content.indexOf(chunk);
-
-      console.log('chunkIndex:', chunkIndex);
-
-      // Calculate initial sections (10% - 80% - 10%)
-      const startSectionEndIndex = Math.min(Math.floor(content.length * 0.1), chunk.length);
-      const startSection = content.slice(0, startSectionEndIndex);
-      const endSectionStartIndex = Math.max(
-        Math.floor(content.length * 0.9),
-        content.length - chunk.length,
-      );
-      const endSection = content.slice(endSectionStartIndex);
-      // const estimatedOffset = Math.floor(
-      //   chunk.length * (contextualMaxTokens / countTokens(chunk) / 2),
-      // );
-      const estimatedOffset = Math.floor(chunk.length * 3);
-
-      // Calculate the middle section around the chunk
-      const middleStartIndex = Math.max(chunkIndex - estimatedOffset, startSectionEndIndex);
-      const middleEndIndex = Math.min(
-        chunkIndex + chunk.length + estimatedOffset,
-        endSectionStartIndex,
-      );
-      let middleSection = content.slice(middleStartIndex, middleEndIndex);
-
-      // Combine sections
-      content = startSection + middleSection + endSection;
-
-      console.log('chunkIndex:', chunkIndex, 'Done');
-    }
+    // if (contentTokens > contextualMaxTokens) {
+    //   const chunkIndex = content.indexOf(chunk);
+    //
+    //   console.log('chunkIndex:', chunkIndex);
+    //
+    //   // Calculate initial sections (10% - 80% - 10%)
+    //   const startSectionEndIndex = Math.min(Math.floor(content.length * 0.1), chunk.length);
+    //   const startSection = content.slice(0, startSectionEndIndex);
+    //   const endSectionStartIndex = Math.max(
+    //     Math.floor(content.length * 0.9),
+    //     content.length - chunk.length,
+    //   );
+    //   const endSection = content.slice(endSectionStartIndex);
+    //   // const estimatedOffset = Math.floor(
+    //   //   chunk.length * (contextualMaxTokens / countTokens(chunk) / 2),
+    //   // );
+    //   const estimatedOffset = Math.floor(chunk.length * 3);
+    //
+    //   // Calculate the middle section around the chunk
+    //   const middleStartIndex = Math.max(chunkIndex - estimatedOffset, startSectionEndIndex);
+    //   const middleEndIndex = Math.min(
+    //     chunkIndex + chunk.length + estimatedOffset,
+    //     endSectionStartIndex,
+    //   );
+    //   let middleSection = content.slice(middleStartIndex, middleEndIndex);
+    //
+    //   // Combine sections
+    //   content = startSection + middleSection + endSection;
+    //
+    //   console.log('chunkIndex:', chunkIndex, 'Done');
+    // }
 
     const messages: any[] = [
       {
