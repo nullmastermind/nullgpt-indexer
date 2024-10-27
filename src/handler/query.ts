@@ -4,12 +4,12 @@ import { Request, Response } from 'express';
 import { Document } from 'langchain/document';
 import { cloneDeep, forEach, map } from 'lodash';
 
-import { countTokens, env, getVectorStore } from '../utility/common';
+import { countTokens, env, getVectorStore, trimLines } from '../utility/common';
 
 const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
   const { query, ignoreHashes = [], k = 20, minScore: rerankMinScore = 0.3 } = req.body;
   const ignoredHashesSet = new Set<string>(ignoreHashes);
-  const maxScanLimit = Math.max(k, 100);
+  const maxScanLimit = Math.max(k, 150);
   const results = await vectorStore.similaritySearchWithScore(
     query,
     maxScanLimit + ignoreHashes.length,
@@ -65,13 +65,13 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
       const documentsToRerank = [];
       let accumulatedTokenCount = 0;
       const maxTokensForReranking = Math.max(
-        +env('VOYAGE_RERANK_MODEL_CONTEXT_LENGTH', '8000') - 512,
+        +env('VOYAGE_RERANK_MODEL_CONTEXT_LENGTH', '8000') - 128,
         512,
       );
 
       for (let i = 0; i < data.length; i++) {
         const currentDocument = data[i];
-        const currentDocumentTokens = countTokens(currentDocument[0].pageContent);
+        const currentDocumentTokens = countTokens(trimLines(currentDocument[0].pageContent));
         accumulatedTokenCount += currentDocumentTokens;
         if (accumulatedTokenCount <= maxTokensForReranking) {
           documentsToRerank.push(currentDocument);
@@ -85,7 +85,7 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
         {
           query: query,
           documents: documentsToRerank.map((document) => {
-            return document[0].pageContent;
+            return trimLines(document[0].pageContent);
           }),
           model: env('VOYAGE_RERANK_MODEL', 'rerank-2'),
           top_k: k,

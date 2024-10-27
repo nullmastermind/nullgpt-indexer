@@ -454,3 +454,10 @@ export const getLoader = async (
 };
 
 export const non = () => {};
+
+export const trimLines = (content: string) => {
+  return content
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n');
+};
