@@ -5,7 +5,7 @@ import { retryDecorator } from 'ts-retry-promise';
 
 import { summaryStorage } from '../constant';
 import { SummaryStrategy } from './SummarySplitter';
-import { createMd5, env } from './common';
+import { countTokens, createMd5, env } from './common';
 
 const limiter = new RateLimiter({
   interval: 'second',
@@ -27,10 +27,45 @@ export const addChunkContext = retryDecorator(
   ): Promise<string | null> => {
     await limiter.removeTokens(1);
 
+    const contextualMaxTokens = +env('CONTEXTUAL_MAX_TOKENS', '16000');
+    const contentTokens = countTokens(content);
+
+    // if (contentTokens > contextualMaxTokens) {
+    //   const chunkIndex = content.indexOf(chunk);
+    //
+    //   console.log('chunkIndex:', chunkIndex);
+    //
+    //   // Calculate initial sections (10% - 80% - 10%)
+    //   const startSectionEndIndex = Math.min(Math.floor(content.length * 0.1), chunk.length);
+    //   const startSection = content.slice(0, startSectionEndIndex);
+    //   const endSectionStartIndex = Math.max(
+    //     Math.floor(content.length * 0.9),
+    //     content.length - chunk.length,
+    //   );
+    //   const endSection = content.slice(endSectionStartIndex);
+    //   // const estimatedOffset = Math.floor(
+    //   //   chunk.length * (contextualMaxTokens / countTokens(chunk) / 2),
+    //   // );
+    //   const estimatedOffset = Math.floor(chunk.length * 3);
+    //
+    //   // Calculate the middle section around the chunk
+    //   const middleStartIndex = Math.max(chunkIndex - estimatedOffset, startSectionEndIndex);
+    //   const middleEndIndex = Math.min(
+    //     chunkIndex + chunk.length + estimatedOffset,
+    //     endSectionStartIndex,
+    //   );
+    //   let middleSection = content.slice(middleStartIndex, middleEndIndex);
+    //
+    //   // Combine sections
+    //   content = startSection + middleSection + endSection;
+    //
+    //   console.log('chunkIndex:', chunkIndex, 'Done');
+    // }
+
     const messages: any[] = [
       {
         role: 'system',
-        content: `You are a helpful assistant that provides concise contextual summaries. Your task is to analyze document chunks and provide brief, clear context about how each chunk fits into the overall document. Focus on key relationships and positioning within the document structure. Be direct and succinct.
+        content: `You are a helpful assistant that provides concise contextual summaries optimized for semantic search and BM25 retrieval. Your task is to analyze document chunks and provide clear context that enhances search relevance. Focus on key terms, technical concepts, and document structure that would improve matching in both semantic and keyword-based searches (BM25). Be direct and use terminology that aligns with likely search queries.
 
 Here is the response boilerplate:
 
@@ -84,9 +119,13 @@ Please give a short succinct context to situate this chunk within the overall do
     })()?.trim();
 
     if (summarized) {
+      // console.log('summarized:', summarized);
+
       await summaryStorage.set(key, summarized);
       return summarized;
     }
+
+    console.error('Failed to generate contextual summary - no valid response from API');
 
     throw {
       message: 'Failed to generate contextual summary - no valid response from API',

@@ -5,6 +5,7 @@ import { createHash } from 'crypto';
 import fg from 'fast-glob';
 import * as fs from 'fs-extra';
 import { pathExists } from 'fs-extra';
+import { encode } from 'gpt-tokenizer';
 import ignore, { Ignore } from 'ignore';
 import { BaseDocumentLoader } from 'langchain/dist/document_loaders/base';
 import { Document } from 'langchain/document';
@@ -13,7 +14,6 @@ import { forEach } from 'lodash';
 import path, { join } from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
-import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
 import CachedEmbeddings from './embeddings/CachedEmbeddings';
 import CachedGoogleGenerativeAIEmbeddings from './embeddings/CachedGoogleGenerativeAIEmbeddings';
@@ -291,11 +291,6 @@ export const getSplitter = (filePath: string, ext: string): TextSplitter | Summa
       summaryStrategy = 'code';
     }
 
-    // Strategy for special file extensions
-    if (ext in Strategy) {
-      summaryStrategy = ext;
-    }
-
     return new SummarySplitter(summaryStrategy, filePath);
   }
 
@@ -400,10 +395,8 @@ export function gitAddSafeDir(cwd: string): Promise<string> {
   });
 }
 
-export const countTokens = async (content: string) => {
+export const countTokens = (content: string) => {
   try {
-    const { encode } = await import('gpt-tokenizer');
-
     return encode(content).length;
   } catch {
     return 0;
@@ -455,3 +448,10 @@ export const getLoader = async (
 };
 
 export const non = () => {};
+
+export const trimLines = (content: string) => {
+  return content
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n');
+};
