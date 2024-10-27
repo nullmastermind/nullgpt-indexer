@@ -8,11 +8,14 @@ import { summaryStorage } from '../constant';
 import { SummaryStrategy } from './SummarySplitter';
 import { countTokens, createMd5, env } from './common';
 
-const limiter = new RateLimiter({
+const RATE_LIMIT = +env('CONTEXTUAL_RATE_LIMIT_PER_SECOND', '10');
+
+const rateLimiter = new RateLimiter({
   interval: 'second',
-  tokensPerInterval: +(process.env.CONTEXTUAL_RATE_LIMIT_PER_SECOND || '10'),
+  tokensPerInterval: RATE_LIMIT,
 });
-const limit = pLimit(+(process.env.CONTEXTUAL_RATE_LIMIT_PER_SECOND || '10'));
+
+const concurrencyLimiter = pLimit(RATE_LIMIT);
 
 export const openai = new OpenAI({
   apiKey: process.env.CONTEXTUAL_API_KEY || process.env.OPENAI_API_KEY,
@@ -28,9 +31,8 @@ export const addChunkContext = retryDecorator(
     strategy: SummaryStrategy,
     documentId: string,
   ): Promise<string | null> => {
-    return limit(async () => {
-      await limiter.removeTokens(1);
-
+    await rateLimiter.removeTokens(1);
+    return concurrencyLimiter(async () => {
       const contextualMaxTokens = +env('CONTEXTUAL_MAX_TOKENS', '16000');
       const contentTokens = countTokens(content);
 
