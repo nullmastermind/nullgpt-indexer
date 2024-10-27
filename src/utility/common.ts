@@ -14,7 +14,6 @@ import { forEach } from 'lodash';
 import path, { join } from 'path';
 
 import { indexSaveDir, splitter, vectorStores } from '../constant';
-import Strategy from './Strategy';
 import SummarySplitter from './SummarySplitter';
 import CachedEmbeddings from './embeddings/CachedEmbeddings';
 import CachedGoogleGenerativeAIEmbeddings from './embeddings/CachedGoogleGenerativeAIEmbeddings';
@@ -290,11 +289,6 @@ export const getSplitter = (filePath: string, ext: string): TextSplitter | Summa
       ].includes(ext)
     ) {
       summaryStrategy = 'code';
-    }
-
-    // Strategy for special file extensions
-    if (ext in Strategy) {
-      summaryStrategy = ext;
     }
 
     return new SummarySplitter(summaryStrategy, filePath);
