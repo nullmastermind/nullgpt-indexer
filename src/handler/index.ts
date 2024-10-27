@@ -110,7 +110,7 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
 
       processedHashes[contentHash] = true;
       newlyProcessedHashes[contentHash] = true;
-      forEach(temporaryProcessedHashes, (value, key) => {
+      forEach(temporaryProcessedHashes, (_value, key) => {
         processedHashes[key] = true;
         newlyProcessedHashes[key] = true;
       });
