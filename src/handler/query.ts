@@ -158,53 +158,53 @@ const queryByVectorStore = async (req: Request, vectorStore: FaissStore) => {
 };
 
 const queryHandler = async (req: Request, res: Response) => {
-  const { doc_id: docId, api_key: apiKey, query = '' } = req.body;
-  const docVectorStore = await getVectorStore(docId, docId, apiKey);
+  const { doc_id: documentId, api_key: apiKey, query = '' } = req.body;
+  const documentVectorStore = await getVectorStore(documentId, documentId, apiKey);
 
-  const queries: any[] = [];
+  const vectorQueries: any[] = [];
 
-  query.replace(/`@(.*?)`/g, (substring: any, args: any) => {
-    const req1 = cloneDeep(req);
-    req1.body.query = args;
-    req1.body.k = Math.min(req1.body.k, 3);
-    queries.push(queryByVectorStore(req1, docVectorStore));
-    return substring;
+  query.replace(/`@(.*?)`/g, (matchedString: any, queryText: any) => {
+    const subRequest = cloneDeep(req);
+    subRequest.body.query = queryText;
+    subRequest.body.k = Math.min(subRequest.body.k, 3);
+    vectorQueries.push(queryByVectorStore(subRequest, documentVectorStore));
+    return matchedString;
   });
 
-  queries.push(queryByVectorStore(req, docVectorStore));
+  vectorQueries.push(queryByVectorStore(req, documentVectorStore));
 
-  const queryResults = await Promise.all(queries);
-  const resData: any[] = [];
-  const exitsKeys = new Set<string>([]);
-  const tokenResults: any[] = [];
+  const searchResults = await Promise.all(vectorQueries);
+  const responseData: any[] = [];
+  const processedDocumentKeys = new Set<string>([]);
+  const tokenUsageResults: any[] = [];
 
-  forEach(queryResults, (r) => {
-    let hasItem = false;
-    forEach(r.data, (d) => {
-      const key = [d[0].metadata.hash, d[0].metadata.summary].join('/');
-      if (!exitsKeys.has(key)) {
-        resData.push(d);
-        hasItem = true;
-        exitsKeys.add(key);
+  forEach(searchResults, (searchResult) => {
+    let hasValidDocument = false;
+    forEach(searchResult.data, (document) => {
+      const documentKey = [document[0].metadata.hash, document[0].metadata.summary].join('/');
+      if (!processedDocumentKeys.has(documentKey)) {
+        responseData.push(document);
+        hasValidDocument = true;
+        processedDocumentKeys.add(documentKey);
       }
     });
-    if (hasItem) tokenResults.push(r);
+    if (hasValidDocument) tokenUsageResults.push(searchResult);
   });
 
-  const results = resData.map((v) => {
-    v[1] = 0;
-    return v;
+  const sortedResults = responseData.map((document) => {
+    document[1] = 0;
+    return document;
   });
 
-  results.sort((a, b) => {
-    return (a[0]?.metadata?.summary ? 0 : 1) - (b[0]?.metadata?.summary ? 0 : 1);
+  sortedResults.sort((docA, docB) => {
+    return (docA[0]?.metadata?.summary ? 0 : 1) - (docB[0]?.metadata?.summary ? 0 : 1);
   });
 
   res.status(200).json({
-    data: results,
-    tokens: tokenResults
-      .map((v) => v.tokens)
-      .reduce((previousValue, currentValue) => previousValue + currentValue, 0),
+    data: sortedResults,
+    tokens: tokenUsageResults
+      .map((result) => result.tokens)
+      .reduce((total, current) => total + current, 0),
   });
 };
 
