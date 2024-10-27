@@ -65,7 +65,7 @@ export const addChunkContext = retryDecorator(
     const messages: any[] = [
       {
         role: 'system',
-        content: `You are a helpful assistant that provides concise contextual summaries. Your task is to analyze document chunks and provide brief, clear context about how each chunk fits into the overall document. Focus on key relationships and positioning within the document structure. Be direct and succinct.
+        content: `You are a helpful assistant that provides concise contextual summaries optimized for semantic search and BM25 retrieval. Your task is to analyze document chunks and provide clear context that enhances search relevance. Focus on key terms, technical concepts, and document structure that would improve matching in both semantic and keyword-based searches (BM25). Be direct and use terminology that aligns with likely search queries.
 
 Here is the response boilerplate:
 
