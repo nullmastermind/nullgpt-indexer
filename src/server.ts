@@ -1,15 +1,15 @@
 import cors from 'cors';
 import express from 'express';
 
-import indexHandler from './handler';
-import addDocHandler from './handler/add-doc';
-import docsHandler from './handler/docs';
-import getVersionHandler from './handler/get-version';
-import gitPullHandler from './handler/git-pull';
-import managerHandler from './handler/manager';
-import queryHandler from './handler/query';
-import removeIndexHandler from './handler/remove-index';
-import updateDocHandler from './handler/update-doc';
+import indexHandler from './api';
+import addDocHandler from './api/add-doc';
+import docsHandler from './api/docs';
+import getVersionHandler from './api/get-version';
+import gitPullHandler from './api/git-pull';
+import managerHandler from './api/manager';
+import queryHandler from './api/query';
+import removeIndexHandler from './api/remove-index';
+import updateDocHandler from './api/update-doc';
 
 require('./constant');
 
