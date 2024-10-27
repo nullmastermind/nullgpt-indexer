@@ -1,12 +1,12 @@
 import { RateLimiter } from 'limiter';
 import path from 'node:path';
 import OpenAI from 'openai';
-import pLimit from 'p-limit';
 import { retryDecorator } from 'ts-retry-promise';
 
 import { summaryStorage } from '../constant';
 import { SummaryStrategy } from './SummarySplitter';
 import { countTokens, createMd5, env } from './common';
+import pLimit from './limit';
 
 const RATE_LIMIT = +env('CONTEXTUAL_RATE_LIMIT_PER_SECOND', '10');
 

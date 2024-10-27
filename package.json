@@ -35,7 +35,6 @@
     "lodash": "^4.17.21",
     "nexe": "^4.0.0-rc.6",
     "openai": "^4.28.0",
-    "p-limit": "^6.1.0",
     "ts-retry-promise": "^0.8.1",
     "vectordb": "^0.11.0"
   },
