@@ -29,6 +29,7 @@ type IndexerQueueInput = {
   processedHashes: Record<string, boolean>;
   newlyProcessedHashes: Record<string, boolean>;
   processingStrategy: 'code' | 'document';
+  documentId: string;
 };
 
 const documentProcessingQueue = new Queue<IndexerQueueInput>(
@@ -39,6 +40,7 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
       processedHashes,
       newlyProcessedHashes,
       processingStrategy,
+      documentId,
     }: IndexerQueueInput,
     callback,
   ) => {
@@ -96,6 +98,7 @@ const documentProcessingQueue = new Queue<IndexerQueueInput>(
                       fileContent,
                       document.pageContent,
                       processingStrategy,
+                      documentId,
                     );
 
                     document.pageContent = `${context}\n---\n${document.pageContent}`;
@@ -161,6 +164,7 @@ const indexHandler = async (req: Request, res: Response) => {
             processedHashes,
             newlyProcessedHashes,
             processingStrategy,
+            documentId,
           })
           .on('finish', resolve);
       });
